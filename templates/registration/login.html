@@ -1,0 +1,266 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成績管理系統</title>
+    <style>
+        /* 設計規範 */
+        :root {
+            --bg-body: #f8fafc;
+            --brand-color: #334155; /* 深灰藍，穩定且不刺眼 */
+            --primary-action: #10b981; /* 翠綠色，代表前進與確認 */
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --required-red: #ef4444;
+            --white: #ffffff;
+            --border: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        /* 全域 Header (Logo 字樣) */
+        header {
+            background-color: var(--brand-color);
+            color: var(--white);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .logout-btn {
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 0.9rem;
+            border: 1px solid #475569;
+            padding: 4px 12px;
+            border-radius: 4px;
+            transition: 0.3s;
+        }
+
+        .logout-btn:hover { background: #475569; color: white; }
+
+        /* 卡片式佈局 */
+        .main-container {
+            max-width: 480px;
+            margin: 50px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: var(--white);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            text-align: center;
+            color: var(--brand-color);
+        }
+
+        /* 表單設計 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 5px;
+        }
+
+        .star {
+            color: var(--required-red);
+            margin-left: 2px;
+        }
+
+        .why-required {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--brand-color);
+            background-color: #fff;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary-action);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover { opacity: 0.9; }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .footer-text a {
+            color: var(--brand-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        /* 隱藏/顯示控制 */
+        .hidden { display: none; }
+        
+        .messages {
+            color: var(--required-red);
+            background: #fee2e2;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            text-align: center;
+            list-style: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">成績管理系統</div>
+        <div id="nav-actions">
+        </div>
+    </header>
+
+    <div class="main-container">
+        
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if form.errors %}
+        <ul class="messages">
+            <li>帳號或密碼錯誤。</li>
+        </ul>
+        {% endif %}
+
+        <div class="card {% if show_register %}hidden{% endif %}" id="loginCard">
+            <h2>系統登入</h2>
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>身分權限<span class="star">*</span></label>
+                    <select name="role" required>
+                        <option value="" disabled selected>請選擇身分</option>
+                        <option value="student">學生 (Student)</option>
+                        <option value="teacher">教師 (Teacher)</option>
+                        <option value="admin">管理員 (Admin)</option>
+                    </select>
+                    <small class="why-required">※ 必填：系統需要知道您的權限，以開啟對應的成績功能。</small>
+                </div>
+                <div class="form-group">
+                    <label>帳號<span class="star">*</span></label>
+                    <input type="text" name="username" placeholder="學號或Email" required>
+                    <small class="why-required">※ 必填：這是識別您個人的唯一憑證。</small>
+                </div>
+                <div class="form-group">
+                    <label>密碼<span class="star">*</span></label>
+                    <input type="password" name="password" placeholder="請輸入密碼" required>
+                    <small class="why-required">※ 必填：為了保護您的成績與個人資料隱私。</small>
+                </div>
+                <button type="submit" class="submit-btn">進入系統</button>
+            </form>
+            <div class="footer-text">
+                還沒有帳號嗎？ <a href="javascript:void(0)" onclick="showRegister()">學生註冊</a>
+            </div>
+        </div>
+
+        <div class="card {% if not show_register %}hidden{% endif %}" id="registerCard">
+            <h2>學生帳號註冊</h2>
+            <form method="POST" action="{% url 'register' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>中文姓名<span class="star">*</span></label>
+                    <input type="text" name="full_name" placeholder="例如：林小華" required>
+                    <small class="why-required">※ 必填：註冊姓名必須與身分證件相符，以便製作成績單。</small>
+                </div>
+                <div class="form-group">
+                    <label>學號<span class="star">*</span></label>
+                    <input type="text" name="username" placeholder="請輸入完整學號" required>
+                    <small class="why-required">※ 必填：學號將連結您本學期的所有選課紀錄。</small>
+                </div>
+                <div class="form-group">
+                    <label>設定密碼<span class="star">*</span></label>
+                    <input type="password" name="password1" placeholder="請輸入 8 位以上密碼" required>
+                    <small class="why-required">※ 必填：請設定高強度密碼以確保帳戶安全。</small>
+                </div>
+                <input type="hidden" name="password2" id="id_password2" value="">
+                <button type="submit" class="submit-btn">確認註冊</button>
+            </form>
+            <div class="footer-text">
+                已有帳號？ <a href="javascript:void(0)" onclick="showLogin()">返回登入</a>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function showRegister() {
+            document.getElementById('loginCard').classList.add('hidden');
+            document.getElementById('registerCard').classList.remove('hidden');
+        }
+        function showLogin() {
+            document.getElementById('registerCard').classList.add('hidden');
+            document.getElementById('loginCard').classList.remove('hidden');
+        }
+        // Copy password1 to password2
+        const pass1 = document.querySelector('input[name="password1"]');
+        if (pass1) {
+            pass1.addEventListener('input', function(e) {
+                document.getElementById('id_password2').value = e.target.value;
+            });
+        }
+    </script>
+</body>
+</html>

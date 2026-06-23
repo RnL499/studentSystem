@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}管理者後台 | 成績管理系統{% endblock %}</title>
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --brand-dark: #1e293b;
+            --brand-active: #334155;
+            --bg-main: #f8fafc;
+            --white: #ffffff;
+            --accent: #10b981;
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background-color: var(--bg-main); color: var(--text-main); display: flex; min-height: 100vh; }
+        aside { width: var(--sidebar-width); background-color: var(--brand-dark); color: white; display: flex; flex-direction: column; position: fixed; height: 100vh; }
+        .sidebar-header { padding: 30px 24px; font-size: 1.2rem; font-weight: bold; border-bottom: 1px solid #334155; }
+        nav { flex-grow: 1; padding: 20px 0; }
+        nav a { display: block; padding: 14px 24px; color: #94a3b8; text-decoration: none; font-size: 0.95rem; }
+        nav a:hover, nav a.active { background-color: var(--brand-active); color: white; border-left: 4px solid var(--accent); }
+        .sidebar-footer { padding: 20px; border-top: 1px solid #334155; }
+        .logout-link { color: #ef4444; text-decoration: none; font-size: 0.9rem; display: block; padding: 10px; background: none; border: none; cursor: pointer; }
+        main { margin-left: var(--sidebar-width); flex-grow: 1; padding: 40px; min-width: 0; }
+        .uiux-messages { margin-bottom: 20px; }
+        .uiux-message { padding: 12px 16px; border-radius: 6px; margin-bottom: 8px; font-size: 0.9rem; }
+        .uiux-message-success { background: #d1fae5; color: #065f46; }
+        .uiux-message-error { background: #fee2e2; color: #991b1b; }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <aside>
+        <div class="sidebar-header">成績管理系統</div>
+        <nav>
+            <a href="{% url 'create_teacher' %}" {% if active_nav == 'create_teacher' %}class="active"{% endif %}>新增教師</a>
+            <a href="{% url 'admin_add_course' %}" {% if active_nav == 'add_course' %}class="active"{% endif %}>新增課程</a>
+            <a href="/admin/" {% if active_nav == 'django_admin' %}class="active"{% endif %}>Django 後台</a>
+        </nav>
+        <div class="sidebar-footer">
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="logout-link">登出系統</button>
+            </form>
+        </div>
+    </aside>
+    <main>
+        {% include 'uiux/includes/messages.html' %}
+        {% block content %}{% endblock %}
+    </main>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

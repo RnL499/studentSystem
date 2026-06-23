@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>修課名單 | 成績管理系統</title>
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --brand-dark: #1e293b;
+            --brand-active: #334155;
+            --bg-main: #f8fafc;
+            --white: #ffffff;
+            --info: #3b82f6;
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background-color: var(--bg-main); display: flex; }
+        
+        /* 側邊導覽 (保持一致) */
+        aside { width: var(--sidebar-width); background-color: var(--brand-dark); color: white; position: fixed; height: 100vh; }
+        .sidebar-header { padding: 30px 24px; font-size: 1.2rem; font-weight: bold; border-bottom: 1px solid #334155; }
+        nav a { display: block; padding: 14px 24px; color: #94a3b8; text-decoration: none; }
+        nav a.active { background-color: var(--brand-active); color: white; border-left: 4px solid var(--info); }
+
+        /* 主內容 */
+        main { margin-left: var(--sidebar-width); flex-grow: 1; padding: 40px; }
+        .card {
+            background: var(--white); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border); padding: 35px;
+        }
+        h2 { font-size: 1.4rem; margin-bottom: 25px; color: var(--brand-dark); display: flex; align-items: center; }
+        h2::before { content: ""; width: 4px; height: 20px; background: var(--info); margin-right: 12px; border-radius: 2px; }
+
+        /* 表格優化 */
+        .filter-section { margin-bottom: 25px; display: flex; align-items: center; gap: 15px; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th { text-align: left; padding: 16px; background: #f8fafc; color: var(--text-muted); font-size: 0.9rem; border-bottom: 2px solid var(--border); }
+        td { padding: 18px 16px; border-bottom: 1px solid var(--border); font-size: 1rem; }
+        tr:hover { background-color: #f1f5f9; }
+        
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; background: #e0f2fe; color: #0369a1; }
+    </style>
+</head>
+<body>
+    <aside>
+        <div class="sidebar-header">成績管理系統</div>
+        <nav>
+            <a href="#">教師：新增課程</a>
+            <a href="#" class="active">教師：修課名單</a>
+            <a href="#">教師：成績管理</a>
+        </nav>
+    </aside>
+    <main>
+        <div class="page-header">
+            <h1 style="margin-bottom: 10px;">3.2 查詢修課學生名單</h1>
+        </div>
+        <div class="card">
+            <div class="filter-section">
+                <label>選擇當前課程：</label>
+                <select style="width: auto; padding: 8px 20px; border-radius: 6px; border: 1.5px solid var(--border);">
+                    <option>網頁設計實務 (A班)</option>
+                    <option>計算機概論 (B班)</option>
+                </select>
+                <span style="color: var(--text-muted); font-size: 0.9rem; margin-left: auto;">※ 請選擇欲查詢的科目，系統將自動過濾出該班級學生名冊。</span>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>序號</th>
+                        <th>學號</th>
+                        <th>學生姓名</th>
+                        <th>系級</th>
+                        <th>修課狀態</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>01</td>
+                        <td><strong>S11200451</strong></td>
+                        <td>林小明</td>
+                        <td>資管系二年級</td>
+                        <td><span class="badge">已確認修課</span></td>
+                    </tr>
+                    <tr>
+                        <td>02</td>
+                        <td><strong>S11200482</strong></td>
+                        <td>陳美美</td>
+                        <td>數媒系三年級</td>
+                        <td><span class="badge">已確認修課</span></td>
+                    </tr>
+                    <tr>
+                        <td>03</td>
+                        <td><strong>S11200910</strong></td>
+                        <td>王大偉</td>
+                        <td>資工系一年級</td>
+                        <td><span class="badge">已確認修課</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</body>
+</html>

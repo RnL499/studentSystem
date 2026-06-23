@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>選課管理 | 成績管理系統</title>
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --brand-dark: #1e293b;
+            --brand-active: #334155;
+            --bg-main: #f8fafc;
+            --white: #ffffff;
+            --primary: #3b82f6; /* 清新藍 */
+            --danger: #ef4444; /* 退選紅 */
+            --success: #10b981; /* 加選綠 */
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background-color: var(--bg-main); display: flex; }
+
+        /* 側邊導覽 */
+        aside { width: var(--sidebar-width); background-color: var(--brand-dark); color: white; position: fixed; height: 100vh; }
+        .sidebar-header { padding: 30px 24px; font-size: 1.2rem; font-weight: bold; border-bottom: 1px solid #334155; }
+        nav a { display: block; padding: 14px 24px; color: #94a3b8; text-decoration: none; }
+        nav a.active { background-color: var(--brand-active); color: white; border-left: 4px solid var(--primary); }
+
+        /* 主內容 */
+        main { margin-left: var(--sidebar-width); flex-grow: 1; padding: 40px; }
+        .page-header { margin-bottom: 30px; }
+        .page-header h1 { font-size: 1.5rem; color: var(--brand-dark); }
+
+        .card { background: var(--white); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border); padding: 30px; margin-bottom: 30px; }
+
+        /* 必填與說明 */
+        .info-box {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .info-box p { font-size: 0.85rem; color: #1e40af; line-height: 1.6; }
+
+        /* 課程表格 */
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 14px; background: #f8fafc; color: var(--text-muted); font-size: 0.85rem; border-bottom: 2px solid var(--border); }
+        td { padding: 16px 14px; border-bottom: 1px solid var(--border); font-size: 0.95rem; }
+        
+        /* 標籤與按鈕 */
+        .credit-badge { background: #f1f5f9; color: var(--text-main); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: none;
+            transition: 0.2s;
+        }
+        .btn-add { background: var(--success); color: white; }
+        .btn-add:hover { background: #059669; }
+        
+        .btn-drop { background: #fee2e2; color: var(--danger); }
+        .btn-drop:hover { background: var(--danger); color: white; }
+
+        .full-capacity { color: var(--text-muted); font-style: italic; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div class="sidebar-header">成績管理系統</div>
+        <nav>
+            <a href="#" class="active">學生：選課管理</a>
+            <a href="#">我的課表</a>
+            <a href="#">成績查詢</a>
+            <a href="#">修改資訊</a>
+        </nav>
+    </aside>
+
+    <main>
+        <div class="page-header">
+            <h1>4.1 選課管理中心</h1>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">學號：S11200451 | 姓名：林小明</p>
+        </div>
+
+        <div class="card">
+            <h2 style="font-size: 1.2rem; margin-bottom: 20px; color: var(--brand-dark);">4.1.1 可加選課程列表</h2>
+            <div class="info-box">
+                <p><strong>※ 注意事項：</strong>加選前請確認該課程與現有課表無時段衝突。加選後，系統將自動將您的資訊同步給授課教師。若課程顯示「已額滿」，代表該班級修課人數已達上限。</p>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>課程名稱</th>
+                        <th>授課教師</th>
+                        <th>時段</th>
+                        <th>學分</th>
+                        <th>剩餘名額</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>UI/UX 介面設計</strong></td>
+                        <td>王老師</td>
+                        <td>週三 09:00-12:00</td>
+                        <td><span class="credit-badge">3 學分</span></td>
+                        <td>5 / 40</td>
+                        <td><button class="btn btn-add">立即加選</button></td>
+                    </tr>
+                    <tr>
+                        <td><strong>人工智慧導論</strong></td>
+                        <td>張教授</td>
+                        <td>週四 13:00-16:00</td>
+                        <td><span class="credit-badge">2 學分</span></td>
+                        <td>12 / 60</td>
+                        <td><button class="btn btn-add">立即加選</button></td>
+                    </tr>
+                    <tr>
+                        <td><strong>資料庫管理系統</strong></td>
+                        <td>李主任</td>
+                        <td>週二 09:00-12:00</td>
+                        <td><span class="credit-badge">3 學分</span></td>
+                        <td class="full-capacity">已額滿</td>
+                        <td><button class="btn" disabled style="background:#f1f5f9; color:#cbd5e1; cursor:not-allowed;">無法加選</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--danger);">
+            <h2 style="font-size: 1.2rem; margin-bottom: 20px; color: var(--danger);">4.1.2 已選課程 (可退選)</h2>
+            <div class="info-box" style="background: #fff1f2; border-left-color: var(--danger);">
+                <p style="color: #9f1239;"><strong>※ 注意事項：</strong>退選後，您將立即失去該課程的修課資格，相關成績紀錄也會被清除。請務必確認您的總修課學分仍符合學校最低標準。</p>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>課程名稱</th>
+                        <th>授課教師</th>
+                        <th>時段</th>
+                        <th>學分</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>網頁設計實務</td>
+                        <td>李美美</td>
+                        <td>週一 13:00-16:00</td>
+                        <td><span class="credit-badge">3 學分</span></td>
+                        <td><button class="btn btn-drop">退選課程</button></td>
+                    </tr>
+                    <tr>
+                        <td>英文閱讀與寫作</td>
+                        <td>Anderson</td>
+                        <td>週五 09:00-11:00</td>
+                        <td><span class="credit-badge">2 學分</span></td>
+                        <td><button class="btn btn-drop">退選課程</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+</body>
+</html>

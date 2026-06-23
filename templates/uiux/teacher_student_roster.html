@@ -1,0 +1,87 @@
+{% extends 'uiux/base_teacher.html' %}
+
+{% block title %}修課名單 | 成績管理系統{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        background: var(--white); border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border); padding: 35px;
+    }
+    h2.page-title { font-size: 1.4rem; margin-bottom: 25px; color: var(--brand-dark); display: flex; align-items: center; }
+    h2.page-title::before { content: ""; width: 4px; height: 20px; background: #3b82f6; margin-right: 12px; border-radius: 2px; }
+    .filter-section { margin-bottom: 25px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+    .filter-section select { padding: 8px 20px; border-radius: 6px; border: 1.5px solid var(--border); min-width: 220px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 16px; background: #f8fafc; color: var(--text-muted); font-size: 0.9rem; border-bottom: 2px solid var(--border); }
+    td { padding: 18px 16px; border-bottom: 1px solid var(--border); font-size: 1rem; }
+    tr:hover { background-color: #f1f5f9; }
+    .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; background: #e0f2fe; color: #0369a1; }
+    .course-pick-hint { color: var(--text-muted); font-size: 0.9rem; }
+    .empty-msg { text-align: center; color: var(--text-muted); padding: 24px; }
+    .btn-outline {
+        padding: 8px 16px; font-size: 0.85rem; border: 1px solid var(--border);
+        background: var(--white); color: var(--text-main); border-radius: 6px;
+        text-decoration: none; font-weight: bold; cursor: pointer; transition: 0.2s;
+    }
+    .btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 10px;">
+    <h1 style="font-size: 1.5rem; margin-bottom: 8px;">查詢修課學生名單</h1>
+</div>
+
+{% if not courses %}
+<div class="card">
+    <p class="empty-msg">您目前沒有任教的課程。<a href="{% url 'create_course' %}">建立課程</a></p>
+</div>
+{% else %}
+<div class="card">
+    <h2 class="page-title">修課學生名冊</h2>
+    <div class="filter-section" style="justify-content: space-between;">
+        <div>
+            <label>選擇當前課程：</label>
+            <select onchange="if(this.value) window.location.href=this.value;">
+                {% for c in courses %}
+                <option value="{% url 'teacher_course_students' c.id %}" {% if course.id == c.id %}selected{% endif %}>
+                    {{ c.name }} ({{ c.code }})
+                </option>
+                {% endfor %}
+            </select>
+            <span class="course-pick-hint">※ 選擇科目後系統將顯示該班級學生名冊。</span>
+        </div>
+        <div>
+            <a href="{% url 'edit_course' course.id %}" class="btn-outline">編輯課程</a>
+            <a href="{% url 'export_course_students' course.id %}" class="btn-outline">匯出名單 (CSV)</a>
+        </div>
+    </div>
+
+    {% if enrollments %}
+    <table>
+        <thead>
+            <tr>
+                <th>序號</th>
+                <th>學號</th>
+                <th>學生姓名</th>
+                <th>修課狀態</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in enrollments %}
+            <tr>
+                <td>{{ forloop.counter|stringformat:"02d" }}</td>
+                <td><strong>{{ e.student.username }}</strong></td>
+                <td>{{ e.student.profile.full_name|default:e.student.username }}</td>
+                <td><span class="badge">已確認修課</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-msg">此課程尚無學生選修。</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

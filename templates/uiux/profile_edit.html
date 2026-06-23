@@ -1,0 +1,174 @@
+{% extends 'uiux/base_student.html' %}
+{% load static %}
+
+{% block title %}個人資訊修改 | 成績管理系統{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 寬版卡片 */
+    .settings-card { 
+        background: var(--white); 
+        border-radius: 12px; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03); 
+        border: 1px solid var(--border); 
+        padding: 40px; 
+        max-width: 900px; 
+    }
+
+    .section-title {
+        font-size: 1.2rem;
+        margin-bottom: 25px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--bg-main);
+        color: var(--brand-dark);
+        display: flex;
+        align-items: center;
+    }
+
+    /* 頭像上傳區 UX */
+    .avatar-edit-box {
+        display: flex;
+        align-items: center;
+        gap: 30px;
+        background: #f8fafc;
+        padding: 25px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+
+    .avatar-circle {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background-color: #e2e8f0;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: cover;
+        border: 3px solid white;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .upload-controls h4 { margin-bottom: 8px; font-size: 1rem; }
+
+    /* 表單排版 */
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+    }
+
+    .form-group { margin-bottom: 20px; }
+    .full-width { grid-column: span 2; }
+
+    label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; }
+    .star { color: #ef4444; }
+
+    input {
+        width: 100%;
+        padding: 12px;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        font-size: 1rem;
+        outline: none;
+        transition: 0.2s;
+    }
+
+    input:focus { border-color: var(--primary); background: #fff; }
+    input:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+
+    .explanation {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 8px;
+        padding: 8px 12px;
+        background: #f1f5f9;
+        border-radius: 6px;
+        line-height: 1.5;
+    }
+
+    /* 儲存按鈕 */
+    .action-bar {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+        text-align: right;
+    }
+
+    .btn-save {
+        background-color: var(--primary);
+        color: white;
+        padding: 12px 35px;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .btn-save:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 30px;">
+    <h1 style="font-size: 1.5rem;">帳戶設定</h1>
+    <p style="color: var(--text-muted);">維護您的個人資料與安全設定</p>
+</div>
+
+<div class="settings-card">
+    <form method="POST" action="{% url 'edit_profile' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <h2 class="section-title">基本資訊</h2>
+        
+        <div class="avatar-edit-box">
+            <div class="avatar-circle" id="avatarPreview" style="background-image: url('{% if user.profile.avatar %}{{ user.profile.avatar.url }}{% else %}https://via.placeholder.com/100{% endif %}');"></div>
+            <div class="upload-controls">
+                <h4>個人頭像</h4>
+                <input type="file" name="avatar" id="avatar-input" style="display: none;" accept="image/*">
+                <button type="button" onclick="document.getElementById('avatar-input').click()" style="padding: 8px 16px; border: 1.5px solid var(--border); border-radius: 6px; background: white; cursor: pointer; font-size: 0.85rem;">更換圖片</button>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>真實姓名<span class="star">*</span></label>
+                <input type="text" name="full_name" value="{{ user.profile.full_name }}" required>
+                <small class="explanation">※請務必填寫與證件一致之姓名。此欄位將直接與學期成績單關聯，修改後需經教務處審核。</small>
+            </div>
+
+            <div class="form-group">
+                <label>系統帳號 / 學號 (不可修改)</label>
+                <input type="text" value="{{ user.username }}" disabled>
+                <small class="explanation">※ 提示：帳號為系統唯一識別碼，若編號有誤請聯絡資訊中心。</small>
+            </div>
+
+            <div class="form-group full-width">
+                <label>常用聯絡 Email</label>
+                <input type="email" name="email" value="{{ user.email }}">
+                <small class="explanation">※用於接收成績發佈通知、選課成功確認信及密碼重設郵件。</small>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <a href="{% url 'course_enrollment_manage' %}" style="background: none; border: none; color: var(--text-muted); margin-right: 20px; cursor: pointer; text-decoration: none; display: inline-block; padding: 12px;">取消變更</a>
+            <button type="submit" class="btn-save">儲存所有變更</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('avatar-input').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('avatarPreview').style.backgroundImage = 'url(' + e.target.result + ')';
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個人資訊修改 | 成績管理系統</title>
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --brand-dark: #1e293b;
+            --brand-active: #334155;
+            --bg-main: #f8fafc;
+            --white: #ffffff;
+            --accent: #10b981; /* 儲存按鈕的綠色 */
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background-color: var(--bg-main); display: flex; }
+
+        /* 側邊導覽列 - 保持系統一致性 */
+        aside { width: var(--sidebar-width); background-color: var(--brand-dark); color: white; position: fixed; height: 100vh; }
+        .sidebar-header { padding: 30px 24px; font-size: 1.2rem; font-weight: bold; border-bottom: 1px solid #334155; }
+        nav a { display: block; padding: 14px 24px; color: #94a3b8; text-decoration: none; }
+        nav a.active { background-color: var(--brand-active); color: white; border-left: 4px solid var(--accent); }
+
+        /* 主工作區 */
+        main { margin-left: var(--sidebar-width); flex-grow: 1; padding: 40px; }
+        .page-header { margin-bottom: 30px; }
+        
+        /* 寬版卡片 */
+        .settings-card { 
+            background: var(--white); 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03); 
+            border: 1px solid var(--border); 
+            padding: 40px; 
+            max-width: 900px; 
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--bg-main);
+            color: var(--brand-dark);
+            display: flex;
+            align-items: center;
+        }
+
+        /* 頭像上傳區 UX */
+        .avatar-edit-box {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            background: #f8fafc;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .avatar-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #e2e8f0 url('https://via.placeholder.com/100') no-repeat center;
+            background-size: cover;
+            border: 3px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .upload-controls h4 { margin-bottom: 8px; font-size: 1rem; }
+
+        /* 表單排版 */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .form-group { margin-bottom: 20px; }
+        .full-width { grid-column: span 2; }
+
+        label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; }
+        .star { color: #ef4444; }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        input:focus { border-color: var(--accent); background: #fff; }
+        input:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+
+        .explanation {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            line-height: 1.5;
+        }
+
+        /* 儲存按鈕 */
+        .action-bar {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            text-align: right;
+        }
+
+        .btn-save {
+            background-color: var(--accent);
+            color: white;
+            padding: 12px 35px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-save:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
+
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div class="sidebar-header">成績管理系統</div>
+        <nav>
+            <a href="#">我的選課/課程</a>
+            <a href="#">我的成績</a>
+            <a href="#" class="active">個人資訊修改</a>
+        </nav>
+    </aside>
+
+    <main>
+        <div class="page-header">
+            <h1 style="font-size: 1.5rem;">帳戶設定</h1>
+            <p style="color: var(--text-muted);">維護您的個人資料與安全設定</p>
+        </div>
+
+        <div class="settings-card">
+            
+            <h2 class="section-title">基本資訊</h2>
+            
+            <div class="avatar-edit-box">
+                <div class="avatar-circle"></div>
+                <div class="upload-controls">
+                    <h4>個人頭像</h4>
+                    <input type="file" id="avatar-input" style="display: none;">
+                    <button type="button" onclick="document.getElementById('avatar-input').click()" style="padding: 8px 16px; border: 1.5px solid var(--border); border-radius: 6px; background: white; cursor: pointer; font-size: 0.85rem;">更換圖片</button>
+                    <!-- <small class="explanation" style="background: none; padding-left: 0;">※ 必填解釋：頭像將用於班級名單辨識，幫助老師與同學更快速地與您溝通。</small> -->
+                </div>
+            </div>
+
+            <form>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>真實姓名<span class="star">*</span></label>
+                        <input type="text" value="林小明">
+                        <small class="explanation">※請務必填寫與證件一致之姓名。此欄位將直接與學期成績單關聯，修改後需經教務處審核。</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>系統帳號 / 學號 (不可修改)</label>
+                        <input type="text" value="S11200451" disabled>
+                        <small class="explanation">※ 提示：帳號為系統唯一識別碼，若編號有誤請聯絡資訊中心。</small>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>常用聯絡 Email<span class="star">*</span></label>
+                        <input type="email" value="xiaoming.lin@example.edu.tw">
+                        <small class="explanation">※用於接收成績發佈通知、選課成功確認信及密碼重設郵件。</small>
+                    </div>
+                </div>
+
+                <h2 class="section-title" style="margin-top: 40px;">安全密碼修改</h2>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>新密碼</label>
+                        <input type="password" placeholder="若不修改請留空">
+                        <small class="explanation">※密碼需包含 8 位以上英數字。為了您的資安，建議每學期定期更換。</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>確認新密碼</label>
+                        <input type="password" placeholder="請再次輸入新密碼">
+                        <small class="explanation">※再次輸入以確保密碼設定正確，避免因輸入錯誤導致無法登入。</small>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <button type="button" style="background: none; border: none; color: var(--text-muted); margin-right: 20px; cursor: pointer;">取消變更</button>
+                    <button type="submit" class="btn-save">儲存所有變更</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+</body>
+</html>

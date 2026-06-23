@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新增課程 | 成績管理系統</title>
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --brand-dark: #1e293b;
+            --brand-active: #334155;
+            --bg-main: #f8fafc;
+            --white: #ffffff;
+            --accent: #10b981;
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-main);
+            display: flex;
+        }
+        /* 側邊導覽 */
+        aside {
+            width: var(--sidebar-width);
+            background-color: var(--brand-dark);
+            color: white;
+            position: fixed;
+            height: 100vh;
+        }
+        .sidebar-header { padding: 30px 24px; font-size: 1.2rem; font-weight: bold; border-bottom: 1px solid #334155; }
+        nav a { display: block; padding: 14px 24px; color: #94a3b8; text-decoration: none; }
+        nav a.active { background-color: var(--brand-active); color: white; border-left: 4px solid var(--accent); }
+
+        /* 主內容 */
+        main { margin-left: var(--sidebar-width); flex-grow: 1; padding: 40px; }
+        .page-header { margin-bottom: 30px; }
+        .card {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border: 1px solid var(--border);
+            padding: 40px;
+            max-width: 800px; /* 寬敞但不鬆散 */
+        }
+        h2 { font-size: 1.4rem; margin-bottom: 25px; color: var(--brand-dark); display: flex; align-items: center; }
+        h2::before { content: ""; width: 4px; height: 20px; background: var(--accent); margin-right: 12px; border-radius: 2px; }
+
+        /* 表單設計 */
+        .form-group { margin-bottom: 25px; }
+        label { display: block; font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; }
+        .star { color: #ef4444; }
+        input, select, textarea {
+            width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 1rem; outline: none;
+        }
+        input:focus { border-color: var(--accent); }
+        .explanation {
+            display: block; font-size: 0.85rem; color: var(--text-muted); margin-top: 8px; padding: 10px; background: #f1f5f9; border-radius: 6px;
+        }
+        .btn-submit {
+            background-color: var(--accent); color: white; padding: 14px 40px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; float: right;
+        }
+    </style>
+</head>
+<body>
+    <aside>
+        <div class="sidebar-header">成績管理系統</div>
+        <nav>
+            <a href="#" class="active">教師：新增課程</a>
+            <a href="#">教師：修課名單</a>
+            <a href="#">教師：成績管理</a>
+        </nav>
+    </aside>
+    <main>
+        <div class="page-header">
+            <h1>課程建立</h1>
+            <p style="color: var(--text-muted);">王大同 教授，請填寫新學期的開課資訊</p>
+        </div>
+        <div class="card">
+            <h2>3.1 新增課程詳細資訊</h2>
+            <form>
+                <div class="form-group">
+                    <label>課程正式名稱<span class="star">*</span></label>
+                    <input type="text" placeholder="例如：進階網頁程式設計">
+                    <small class="explanation">※ 注意事項：此欄位將直接印製於學生的成績單上，請確保名稱嚴謹且正確。</small>
+                </div>
+                <div class="form-group">
+                    <label>開課系所<span class="star">*</span></label>
+                    <select>
+                        <option>資訊管理學系</option>
+                        <option>多媒體設計系</option>
+                    </select>
+                    <small class="explanation">※ 注意事項：協助系統將課程歸類至正確的學術單位，方便行政審核。</small>
+                </div>
+                <div class="form-group">
+                    <label>課程簡介</label>
+                    <textarea rows="4" placeholder="請填寫教學大綱..."></textarea>
+                    <small class="explanation">※ 非必填：提供學生選課時的參考依據，建議包含教學目標與評分標準。</small>
+                </div>
+                <button type="submit" class="btn-submit">確認發佈開課</button>
+                <div style="clear: both;"></div>
+            </form>
+        </div>
+    </main>
+</body>
+</html>

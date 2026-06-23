@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的課表 | 成績管理系統</title>
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --brand-dark: #1e293b;
+            --bg-main: #f8fafc;
+            --white: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #334155;
+            --text-muted: #64748b;
+            
+            /* 課表顏色分類 (莫蘭迪色系，舒適不衝突) */
+            --course-1: #dbeafe; /* 淺藍 */
+            --course-1-text: #1e40af;
+            --course-2: #dcfce7; /* 淺綠 */
+            --course-2-text: #166534;
+            --course-3: #fef3c7; /* 淺黃 */
+            --course-3-text: #92400e;
+            --course-4: #ede9fe; /* 淺紫 */
+            --course-4-text: #5b21b6;
+            --course-5: #ffe0f8; 
+            --course-5-text: #d436b2;
+            --course-6: #d8feff; 
+            --course-6-text: #10898d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background-color: var(--bg-main); display: flex; }
+
+        /* 側邊導覽 */
+        aside { width: var(--sidebar-width); background-color: var(--brand-dark); color: white; position: fixed; height: 100vh; }
+        .sidebar-header { padding: 30px 24px; font-size: 1.2rem; font-weight: bold; border-bottom: 1px solid #334155; }
+        nav a { display: block; padding: 14px 24px; color: #94a3b8; text-decoration: none; }
+        nav a.active { background-color: #334155; color: white; border-left: 4px solid #3b82f6; }
+
+        /* 主內容 */
+        main { margin-left: var(--sidebar-width); flex-grow: 1; padding: 40px; }
+        .page-header { margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .card { background: var(--white); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border); padding: 30px; }
+
+        /* 課表格線設計 */
+        .timetable {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 80px repeat(5, 1fr); /* 時間軸 + 週一至週五 */
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .tt-header, .tt-time-slot {
+            background: #f8fafc;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        .tt-cell {
+            min-height: 100px;
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            padding: 8px;
+            position: relative;
+        }
+
+        /* 課程方塊樣式 */
+        .course-block {
+            width: 100%;
+            height: 100%;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .c-1 { background: var(--course-1); color: var(--course-1-text); border-left: 4px solid #3b82f6; }
+        .c-2 { background: var(--course-2); color: var(--course-2-text); border-left: 4px solid #10b981; }
+        .c-3 { background: var(--course-3); color: var(--course-3-text); border-left: 4px solid #f59e0b; }
+        .c-4 { background: var(--course-4); color: var(--course-4-text); border-left: 4px solid #8b5cf6; }
+        .c-5 { background: var(--course-5); color: var(--course-5-text); border-left: 4px solid #f65cd5; }
+        .c-6 { background: var(--course-6); color: var(--course-6-text); border-left: 4px solid #5cf1f6; }
+
+        .course-name { font-weight: bold; margin-bottom: 4px; }
+        .course-loc { font-size: 0.75rem; opacity: 0.8; }
+
+        /* 必填解釋區 */
+        .info-box {
+            background: #f1f5f9;
+            border-left: 4px solid #64748b;
+            padding: 15px;
+            margin-top: 25px;
+            border-radius: 4px;
+        }
+        .info-box p { font-size: 0.85rem; color: var(--text-main); line-height: 1.6; }
+
+        .print-btn {
+            background: #334155;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div class="sidebar-header">成績管理系統</div>
+        <nav>
+            <a href="#">學生：選課管理</a>
+            <a href="#" class="active">我的課表</a>
+            <a href="#">成績查詢</a>
+            <a href="#">修改資訊</a>
+        </nav>
+    </aside>
+
+    <main>
+        <div class="page-header">
+            <div>
+                <h1 style="font-size: 1.5rem;">我的學期課表</h1>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">112學年度 第2學期</p>
+            </div>
+            <button class="print-btn">列印課表</button>
+        </div>
+
+        <div class="card">
+            <div class="timetable">
+                <div class="tt-header">時段</div>
+                <div class="tt-header">週一</div>
+                <div class="tt-header">週二</div>
+                <div class="tt-header">週三</div>
+                <div class="tt-header">週四</div>
+                <div class="tt-header">週五</div>
+
+                <div class="tt-time-slot">09:00<br>|<br>10:00</div>
+                <div class="tt-cell"></div>
+                <div class="tt-cell">
+                    <div class="course-block c-3">
+                        <div class="course-name">資料庫管理</div>
+                        <div class="course-teacher">teacher</div>
+                        <div class="course-loc">管二 204 教室</div>
+                    </div>
+                </div>
+                <div class="tt-cell">
+                    <div class="course-block c-1">
+                        <div class="course-name">UI/UX 設計</div>
+                        <div class="course-teacher">teacher</div>
+                        <div class="course-loc">計網 302 教室</div>
+                    </div>
+                </div>
+                <div class="tt-cell"></div>
+                <div class="tt-cell">
+                    <div class="course-block c-3">
+                        <div class="course-name">英文閱讀</div>
+                        <div class="course-teacher">teacher</div>
+                        <div class="course-loc">通識 101 教室</div>
+                    </div>
+                </div>
+                
+                <div class="tt-time-slot">10:00<br>|<br>11:00</div>
+                
+                <div class="tt-cell"></div>
+                <div class="tt-cell"></div>
+                <div class="tt-cell">
+                    <div class="course-block c-4">
+                        <div class="course-name">網頁設計實務</div>
+                        <div class="course-teacher">teacher</div>
+                        <div class="course-loc">計網 201 教室</div>
+                    </div>
+                </div>
+                <div class="tt-cell"></div>
+                <div class="tt-cell"></div>
+
+                <div class="tt-time-slot">13:00<br>|<br>14:00</div>
+                <div class="tt-cell">
+                    <div class="course-block c-6">
+                        <div class="course-name">網頁設計實務</div>
+                        <div class="course-teacher">teacher</div>
+                        <div class="course-loc">計網 201 教室</div>
+                    </div>
+                </div>
+                <div class="tt-cell"></div>
+                <div class="tt-cell"></div>
+                <div class="tt-cell">
+                    <div class="course-block c-1">
+                        <div class="course-name">人工智慧導論</div>
+                        <div class="course-teacher">teacher</div>
+                        <div class="course-loc">理學院 105 教室</div>
+                    </div>
+                </div>
+                <div class="tt-cell"></div>
+
+                <div class="tt-time-slot">14:00<br>|<br>15:00</div>
+                <div class="tt-cell"></div>
+                <div class="tt-cell">
+                    <div class="course-block c-2">
+                        <div class="course-name">網頁設計實務</div>
+                        <div class="course-teacher">teacher</div>
+                        <div class="course-loc">計網 201 教室</div>
+                    </div>
+                </div>
+                <div class="tt-cell"></div>
+                <div class="tt-cell"></div>
+                <div class="tt-cell">
+                    <div class="course-block c-5">
+                        <div class="course-name">人工智慧導論</div>
+                        <div class="course-teacher">teacher</div>
+                        <div class="course-loc">理學院 105 教室</div>
+                    </div>
+                </div>
+               
+                </div>
+            </div>
+
+            <div class="info-box">
+                <p><strong>※ 注意事項：</strong>課表數據是根據「選課管理」的加退選結果即時生成的。若您剛完成加選卻未看到課程，請嘗試刷新頁面。此課表僅顯示正式核定之課程，不包含自主學習或社團活動時段。</p>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

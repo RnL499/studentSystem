@@ -1,0 +1,15 @@
+{% extends 'uiux/base_teacher.html' %}
+
+{% block title %}刪除課程{% endblock %}
+
+{% block content %}
+<div class="card" style="background:white;border-radius:12px;border:1px solid var(--border);padding:35px;max-width:560px;">
+    <h2 style="color:#ef4444;margin-bottom:16px;">確認刪除課程</h2>
+    <p style="margin-bottom:24px;color:var(--text-muted);">確定要刪除課程 <strong>{{ course.code }} — {{ course.name }}</strong> 嗎？此動作無法還原。</p>
+    <form method="post" style="display:flex;gap:12px;">
+        {% csrf_token %}
+        <button type="submit" style="background:#ef4444;color:white;padding:10px 24px;border:none;border-radius:6px;font-weight:bold;cursor:pointer;">確定刪除</button>
+        <a href="{% url 'teacher_courses' %}" style="padding:10px 24px;border:1px solid var(--border);border-radius:6px;text-decoration:none;color:var(--text-main);">取消</a>
+    </form>
+</div>
+{% endblock %}

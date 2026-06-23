@@ -1,0 +1,59 @@
+{% extends 'uiux/base_student.html' %}
+
+{% block title %}我的課表 | 成績管理系統{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header { margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+    .card { background: var(--white); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border); padding: 30px; }
+    .course-list { display: grid; gap: 12px; }
+    .course-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 16px 20px; border-radius: 8px; border: 1px solid var(--border);
+        background: #f8fafc;
+    }
+    .course-item strong { color: var(--brand-dark); }
+    .course-meta { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+    .print-btn { background: #334155; color: white; padding: 8px 20px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; border: none; }
+    .info-box {
+        background: #f1f5f9; border-left: 4px solid #64748b;
+        padding: 15px; margin-top: 25px; border-radius: 4px;
+    }
+    .info-box p { font-size: 0.85rem; color: var(--text-main); line-height: 1.6; }
+    .color-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 style="font-size: 1.5rem;">我的學期課表</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">{{ semester_label }}</p>
+    </div>
+    <button type="button" class="print-btn" onclick="window.print()">列印課表</button>
+</div>
+
+<div class="card">
+    {% if schedule_rows %}
+    <div class="course-list">
+        {% for row in schedule_rows %}
+        <div class="course-item">
+            <div>
+                <span class="color-dot" style="background: {{ row.color }};"></span>
+                <strong>{{ row.course.name }}</strong>
+                <div class="course-meta">
+                    {{ row.course.code }} · {{ row.teacher_name }} · {{ row.schedule }} · {{ row.credits }} 學分
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="text-align:center; color: var(--text-muted); padding: 32px;">尚未選修課程。<a href="{% url 'course_enrollment_manage' %}">前往選課</a></p>
+    {% endif %}
+
+    <div class="info-box">
+        <p><strong>※ 注意事項：</strong>課表依選課結果即時更新。完整週課表視圖將在課程時段欄位上線後顯示；目前以修課清單呈現。</p>
+    </div>
+</div>
+{% endblock %}

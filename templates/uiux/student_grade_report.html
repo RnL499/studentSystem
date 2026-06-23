@@ -1,0 +1,132 @@
+{% extends 'uiux/base_student.html' %}
+
+{% block title %}成績查詢 | 成績管理系統{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --accent-gold: #b45309;
+        --bg-gold: #fffbeb;
+        --success: #059669;
+    }
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    .summary-card {
+        background: var(--white);
+        padding: 25px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        text-align: center;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+    .summary-card h3 { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px; }
+    .summary-card .value { font-size: 2rem; font-weight: bold; color: var(--brand-dark); }
+    .summary-card .value.highlight { color: var(--accent-gold); }
+    .card { background: var(--white); border-radius: 12px; border: 1px solid var(--border); padding: 30px; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 16px; background: #f8fafc; color: var(--text-muted); font-size: 0.85rem; border-bottom: 2px solid var(--border); }
+    td { padding: 18px 16px; border-bottom: 1px solid var(--border); font-size: 1rem; }
+    .score { font-weight: bold; font-family: Consolas, monospace; font-size: 1.1rem; }
+    .score.pass { color: var(--success); }
+    .score.fail { color: #ef4444; }
+    .info-box {
+        background: #f8fafc;
+        border-left: 4px solid var(--brand-dark);
+        padding: 15px;
+        margin-top: 25px;
+        border-radius: 4px;
+    }
+    .info-box p { font-size: 0.85rem; color: var(--text-main); line-height: 1.6; }
+    .btn-outline {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        border: 1px solid var(--border);
+        background: none;
+        border-radius: 4px;
+        cursor: pointer;
+        color: var(--text-main);
+    }
+    .empty-msg { text-align: center; color: var(--text-muted); padding: 32px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
+    <div>
+        <h1 style="font-size: 1.5rem;">學期成績報表</h1>
+        <p style="color: var(--text-muted);">{{ semester_label }} | {{ display_name }}</p>
+    </div>
+    <div>
+        <form method="get" id="semester-form">
+            <select name="semester" onchange="document.getElementById('semester-form').submit();" style="padding: 8px 12px; border-radius: 6px; border: 1.5px solid var(--border); font-size: 0.9rem;">
+                <option value="all" {% if selected_semester == 'all' %}selected{% endif %}>歷年所有成績</option>
+                {% for sem in semesters %}
+                <option value="{{ sem }}" {% if selected_semester == sem or not selected_semester and sem == semesters.0 %}selected{% endif %}>{{ sem }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+</div>
+
+<div class="summary-grid">
+    <div class="summary-card">
+        <h3>已修學分數</h3>
+        <div class="value">{{ total_credits }}</div>
+    </div>
+    <div class="summary-card" style="background: var(--bg-gold); border-color: #fde68a;">
+        <h3>學期總平均</h3>
+        <div class="value highlight">{% if overall_avg %}{{ overall_avg }}{% else %}—{% endif %}</div>
+    </div>
+    <div class="summary-card">
+        <h3>修習課程數</h3>
+        <div class="value">{{ grade_rows|length }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-header">
+        <h2 style="font-size: 1.2rem; color: var(--brand-dark);">各科成績明細</h2>
+        <a href="{% url 'export_my_grades' %}?semester={{ selected_semester|default:'' }}" class="btn-outline" style="text-decoration: none;">匯出成績報表 (CSV/Excel)</a>
+    </div>
+
+    {% if grade_rows %}
+    <table>
+        <thead>
+            <tr>
+                <th>課程名稱</th>
+                <th>授課教師</th>
+                <th>學分</th>
+                <th>期中成績</th>
+                <th>期末成績</th>
+                <th>學期成績</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in grade_rows %}
+            <tr>
+                <td><strong>{{ row.course.name }}</strong><br><small style="color:var(--text-muted);">{{ row.course.code }}</small></td>
+                <td>{{ row.teacher_name }}</td>
+                <td>{{ row.credits }}</td>
+                <td>{% if row.midterm is not None %}{{ row.midterm }}{% else %}—{% endif %}</td>
+                <td>{% if row.final is not None %}{{ row.final }}{% else %}—{% endif %}</td>
+                <td class="score {% if row.avg and row.avg >= 60 %}pass{% elif row.avg %}fail{% endif %}">
+                    {% if row.avg is not None %}{{ row.avg|floatformat:0 }}{% else %}—{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-msg">尚無成績資料，請先至選課管理加選課程。</p>
+    {% endif %}
+
+    <div class="info-box">
+        <p><strong>※ 注意事項：</strong>學期成績是由「期中」與「期末」成績平均計算。顯示為「—」代表授課教師尚未提交該階段分數。本頁面數據僅供參考。</p>
+    </div>
+</div>
+{% endblock %}

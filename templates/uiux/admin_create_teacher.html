@@ -1,0 +1,105 @@
+{% extends 'uiux/base_admin.html' %}
+
+{% block title %}管理者後台 | 成績管理系統{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header { margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+    .page-header h1 { font-size: 1.75rem; color: var(--brand-dark); }
+    .workspace-card {
+        background: var(--white); border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid var(--border);
+        padding: 40px; max-width: 900px;
+    }
+    .section-title {
+        font-size: 1.25rem; margin-bottom: 25px; display: flex; align-items: center; color: var(--brand-dark);
+    }
+    .section-title::before {
+        content: ""; width: 4px; height: 20px; background: var(--accent);
+        margin-right: 12px; border-radius: 2px;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+    .full-width { grid-column: span 2; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; }
+    .required-star { color: #ef4444; margin-left: 3px; }
+    input, select {
+        width: 100%; padding: 14px; border: 1.5px solid var(--border);
+        border-radius: 8px; font-size: 1rem; outline: none; background: #fcfcfc;
+    }
+    input:focus, select:focus {
+        border-color: var(--accent); background: #fff;
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    }
+    .explanation {
+        display: block; font-size: 0.85rem; color: var(--text-muted);
+        margin-top: 8px; padding: 10px; background: #f1f5f9; border-radius: 6px;
+        border-left: 3px solid #cbd5e1;
+    }
+    .errorlist { color: #ef4444; font-size: 0.85rem; list-style: none; margin-top: 4px; }
+    .action-bar {
+        margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border);
+        display: flex; justify-content: flex-end;
+    }
+    .btn-primary {
+        background-color: var(--accent); color: white; padding: 14px 40px;
+        border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer;
+    }
+    .btn-primary:hover { box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>系統資源管理</h1>
+    <span style="color: var(--text-muted);">歡迎回來，{{ user.username }}</span>
+</div>
+
+<div class="workspace-card">
+    <h2 class="section-title">新增教師帳號</h2>
+    <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-grid">
+            <div class="form-group">
+                <label>教師真實姓名<span class="required-star">*</span></label>
+                <input type="text" name="full_name" placeholder="輸入全名" value="{{ form.full_name.value|default:'' }}">
+                {% if form.full_name.errors %}<ul class="errorlist">{% for e in form.full_name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                <small class="explanation">※ 必填：用於成績單與教師名冊顯示。</small>
+            </div>
+            <div class="form-group">
+                <label>教師帳號 / 編號<span class="required-star">*</span></label>
+                <input type="text" name="username" placeholder="例如：TEA-2024-001" value="{{ form.username.value|default:'' }}" required>
+                {% if form.username.errors %}<ul class="errorlist">{% for e in form.username.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                <small class="explanation">※ 必填：教師登入帳號。</small>
+            </div>
+            <div class="form-group">
+                <label>電子郵件</label>
+                <input type="email" name="email" placeholder="example@university.edu.tw" value="{{ form.email.value|default:'' }}">
+                {% if form.email.errors %}<ul class="errorlist">{% for e in form.email.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="form-group">
+                <label>所屬系所</label>
+                <select name="department_hint">
+                    <option>資訊管理學系</option>
+                    <option>數位內容設計系</option>
+                    <option>企業管理學系</option>
+                </select>
+                <small class="explanation">※ 目前僅供顯示，後續將寫入教師資料。</small>
+            </div>
+            <div class="form-group full-width">
+                <label>密碼<span class="required-star">*</span></label>
+                <input type="password" name="password1" required>
+                {% if form.password1.errors %}<ul class="errorlist">{% for e in form.password1.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="form-group full-width">
+                <label>確認密碼<span class="required-star">*</span></label>
+                <input type="password" name="password2" required>
+                {% if form.password2.errors %}<ul class="errorlist">{% for e in form.password2.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+        </div>
+        <div class="action-bar">
+            <button type="submit" class="btn-primary">確認建立教師帳戶</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

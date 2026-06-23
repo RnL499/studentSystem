@@ -1,0 +1,7 @@
+{% if messages %}
+<div class="uiux-messages">
+  {% for message in messages %}
+  <div class="uiux-message uiux-message-{{ message.tags|default:'info' }}">{{ message }}</div>
+  {% endfor %}
+</div>
+{% endif %}

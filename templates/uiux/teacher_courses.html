@@ -1,0 +1,45 @@
+{% extends 'uiux/base_teacher.html' %}
+
+{% block title %}我的課程 | 成績管理系統{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        background: var(--white); border-radius: 12px; border: 1px solid var(--border); padding: 30px;
+    }
+    .course-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 16px 0; border-bottom: 1px solid var(--border);
+    }
+    .course-row:last-child { border-bottom: none; }
+    .btn-link {
+        padding: 8px 14px; border-radius: 6px; font-size: 0.85rem;
+        text-decoration: none; font-weight: bold; margin-left: 8px;
+    }
+    .btn-primary { background: #3b82f6; color: white; }
+    .btn-warning { background: #f59e0b; color: white; }
+    .btn-danger { background: #fee2e2; color: #ef4444; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 style="font-size: 1.5rem; margin-bottom: 24px;">您任教的課程</h1>
+<div class="card">
+    {% if courses %}
+    {% for c in courses %}
+    <div class="course-row">
+        <div>
+            <strong>{{ c.code }}</strong> — {{ c.name }}
+        </div>
+        <div>
+            <a class="btn-link btn-primary" href="{% url 'teacher_course_students' c.id %}">修課名單</a>
+            <a class="btn-link btn-warning" href="{% url 'teacher_grade_manage' c.id %}">成績管理</a>
+            <a class="btn-link btn-danger" href="{% url 'remove_course' c.id %}">刪除</a>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="color: var(--text-muted); text-align: center; padding: 24px;">尚無課程。<a href="{% url 'create_course' %}">建立第一門課程</a></p>
+    {% endif %}
+</div>
+{% endblock %}

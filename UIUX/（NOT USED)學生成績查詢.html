@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduTrack | 選課成績系統</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+            --white: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; }
+
+        body { background-color: var(--bg-color); color: var(--text-color); display: flex; }
+
+        /* Sidebar Navigation */
+        nav {
+            width: 260px;
+            height: 100vh;
+            background: var(--primary-color);
+            color: white;
+            position: fixed;
+            padding: 20px;
+        }
+
+        nav h2 { text-align: center; margin-bottom: 30px; font-size: 1.5rem; letter-spacing: 2px; }
+
+        .nav-group { margin-bottom: 20px; }
+        .nav-group p { font-size: 0.8rem; color: #95a5a6; text-transform: uppercase; margin-bottom: 10px; padding-left: 10px; }
+
+        nav a {
+            display: block;
+            color: #bdc3c7;
+            padding: 12px 15px;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            transition: 0.3s;
+        }
+
+        nav a:hover, nav a.active { background: var(--secondary-color); color: white; }
+        nav i { margin-right: 10px; width: 20px; }
+
+        /* Main Content Area */
+        main {
+            margin-left: 260px;
+            width: calc(100% - 260px);
+            padding: 40px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--white);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+
+        /* Form Elements */
+        .form-row { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .btn-primary { background: var(--accent-color); color: white; }
+        .btn-primary:hover { background: #219150; }
+        .btn-outline { border: 1px solid var(--primary-color); color: var(--primary-color); background: transparent; }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            text-align: left;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        th { background: #f9f9f9; color: var(--secondary-color); }
+
+        /* Score Badge */
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            background: #e1f5fe;
+            color: #0288d1;
+        }
+
+        .profile-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <h2>EduTrack</h2>
+    
+    <div class="nav-group">
+        <p>管理者功能</p>
+        <a href="#" class="active"><i class="fas fa-user-plus"></i> 教師/課程管理</a>
+    </div>
+
+    <div class="nav-group">
+        <p>教師功能</p>
+        <a href="#"><i class="fas fa-book"></i> 課程與名單</a>
+        <a href="#"><i class="fas fa-pen-nib"></i> 成績輸入</a>
+    </div>
+
+    <div class="nav-group">
+        <p>學生功能</p>
+        <a href="#"><i class="fas fa-search"></i> 選課系統</a>
+        <a href="#"><i class="fas fa-graduation-cap"></i> 成績查詢</a>
+    </div>
+
+    <div class="nav-group" style="margin-top: 50px;">
+        <a href="#"><i class="fas fa-user-cog"></i> 個人資訊</a>
+        <a href="#" style="color: #e74c3c;"><i class="fas fa-sign-out-alt"></i> 登出系統</a>
+    </div>
+</nav>
+
+<main>
+    <div class="header">
+        <h1>學生功能 - 成績查詢</h1>
+        <div class="user-info">
+            <span>歡迎回來，<strong>陳小明 同學</strong></span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>本學期學業表現</h3>
+        <div style="display: flex; gap: 40px; margin-top: 20px;">
+            <div>
+                <small>目前平均分數 (GPA)</small>
+                <h2 style="color: var(--accent-color);">88.5 / 100</h2>
+            </div>
+            <div>
+                <small>已修學分數</small>
+                <h2>18 Credits</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>詳細成績列表</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>課程名稱</th>
+                    <th>授課教師</th>
+                    <th>期中成績</th>
+                    <th>期末成績</th>
+                    <th>狀態</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>計算機概論</td>
+                    <td>王大同 教授</td>
+                    <td>85</td>
+                    <td>90</td>
+                    <td><span class="badge">已及格</span></td>
+                </tr>
+                <tr>
+                    <td>網頁設計實務</td>
+                    <td>李美美 老師</td>
+                    <td>92</td>
+                    <td>--</td>
+                    <td><span class="badge" style="background:#fff9c4; color:#f57f17;">審核中</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>修改個人資訊</h3>
+        <div class="profile-section" style="margin-bottom: 25px;">
+            <div class="avatar"><i class="fas fa-user"></i></div>
+            <button class="btn btn-outline">更換大頭貼</button>
+        </div>
+        <div class="form-row">
+            <label>顯示姓名</label>
+            <input type="text" value="陳小明">
+        </div>
+        <div class="form-row">
+            <label>電子郵件</label>
+            <input type="email" value="student@university.edu.tw">
+        </div>
+        <button class="btn btn-primary">儲存所有變更</button>
+    </div>
+
+    <div class="card">
+        <h3><i class="fas fa-plus-circle"></i> 新增課程設定</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+            <div class="form-row">
+                <label>課程名稱</label>
+                <input type="text" placeholder="例如：人工智慧導論">
+            </div>
+            <div class="form-row">
+                <label>指定授課教師</label>
+                <select>
+                    <option>請選擇教師</option>
+                    <option>王大同 教授</option>
+                    <option>李美美 老師</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-primary" style="margin-top: 10px;">建立課程並發佈</button>
+    </div>
+
+</main>
+
+</body>
+</html>

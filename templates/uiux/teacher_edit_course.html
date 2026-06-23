@@ -1,0 +1,63 @@
+{% extends 'uiux/base_teacher.html' %}
+
+{% block title %}編輯課程 | 成績管理系統{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header { margin-bottom: 30px; }
+    .card {
+        background: var(--white); border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border);
+        padding: 40px; max-width: 800px;
+    }
+    h2.section-title {
+        font-size: 1.4rem; margin-bottom: 25px; color: var(--brand-dark);
+        display: flex; align-items: center;
+    }
+    h2.section-title::before {
+        content: ""; width: 4px; height: 20px; background: var(--accent);
+        margin-right: 12px; border-radius: 2px;
+    }
+    .form-group { margin-bottom: 25px; }
+    label { display: block; font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; }
+    .star { color: #ef4444; }
+    input, select, textarea {
+        width: 100%; padding: 14px; border: 1.5px solid var(--border);
+        border-radius: 8px; font-size: 1rem; outline: none;
+    }
+    input:focus { border-color: var(--accent); }
+    .explanation {
+        display: block; font-size: 0.85rem; color: var(--text-muted);
+        margin-top: 8px; padding: 10px; background: #f1f5f9; border-radius: 6px;
+    }
+    .btn-submit {
+        background-color: var(--accent); color: white; padding: 14px 40px;
+        border: none; border-radius: 8px; font-weight: bold; cursor: pointer; float: right;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 style="font-size: 1.5rem;">編輯課程</h1>
+    <p style="color: var(--text-muted);">{{ user.profile.full_name|default:user.username }}，您正在修改「{{ course.name }}」的資訊</p>
+</div>
+<div class="card">
+    <h2 class="section-title">修改課程詳細資訊</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>課程正式名稱<span class="star">*</span></label>
+            <input type="text" name="course_name" value="{{ course.name }}" required>
+            <small class="explanation">※ 此名稱將顯示於學生成績單上。</small>
+        </div>
+        <div class="form-group">
+            <label>課程代碼<span class="star">*</span></label>
+            <input type="text" name="course_code" value="{{ course.code }}" required>
+            <small class="explanation">※ 課程唯一識別代碼。</small>
+        </div>
+        <button type="submit" class="btn-submit">儲存變更</button>
+        <div style="clear: both;"></div>
+    </form>
+</div>
+{% endblock %}

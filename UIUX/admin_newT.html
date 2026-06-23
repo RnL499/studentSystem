@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理者後台 | 成績管理系統</title>
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --brand-dark: #1e293b;
+            --brand-active: #334155;
+            --bg-main: #f8fafc;
+            --white: #ffffff;
+            --accent: #10b981;
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* --- 側邊導覽列 --- */
+        aside {
+            width: var(--sidebar-width);
+            background-color: var(--brand-dark);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+        }
+
+        .sidebar-header {
+            padding: 30px 24px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-bottom: 1px solid #334155;
+            letter-spacing: 1px;
+        }
+
+        nav {
+            flex-grow: 1;
+            padding: 20px 0;
+        }
+
+        nav a {
+            display: block;
+            padding: 14px 24px;
+            color: #94a3b8;
+            text-decoration: none;
+            transition: 0.3s;
+            font-size: 0.95rem;
+        }
+
+        nav a:hover, nav a.active {
+            background-color: var(--brand-active);
+            color: white;
+            border-left: 4px solid var(--accent);
+        }
+
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid #334155;
+        }
+
+        .logout-link {
+            color: #ef4444;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: block;
+            padding: 10px;
+        }
+
+        /* --- 主內容區 --- */
+        main {
+            margin-left: var(--sidebar-width);
+            flex-grow: 1;
+            padding: 40px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-header h1 {
+            font-size: 1.75rem;
+            color: var(--brand-dark);
+        }
+
+        /* --- 寬版工作卡片 --- */
+        .workspace-card {
+            background: var(--white);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            border: 1px solid var(--border);
+            padding: 40px;
+            max-width: 900px; /* 限制最大寬度以維持閱讀舒適感 */
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            color: var(--brand-dark);
+        }
+
+        .section-title::before {
+            content: "";
+            width: 4px;
+            height: 20px;
+            background: var(--accent);
+            margin-right: 12px;
+            border-radius: 2px;
+        }
+
+        /* --- 表單優化 --- */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .full-width { grid-column: span 2; }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .required-star { color: #ef4444; margin-left: 3px; }
+
+        input, select {
+            width: 100%;
+            padding: 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+            background: #fcfcfc;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+
+        .explanation {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+            padding: 10px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            border-left: 3px solid #cbd5e1;
+        }
+
+        .action-bar {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+            padding: 14px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div class="sidebar-header">
+            成績管理系統
+        </div>
+        <nav>
+            <a href="#" class="active">新增教師</a>
+            <a href="#">新增課程</a>
+            <a href="#">修改資訊</a>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="#" class="logout-link">登出系統</a>
+        </div>
+    </aside>
+
+    <main>
+        <div class="page-header">
+            <h1>系統資源管理</h1>
+            <span style="color: var(--text-muted);">歡迎回來，超級管理員</span>
+        </div>
+
+        <div class="workspace-card">
+            <h2 class="section-title">新增教師帳號</h2>
+            
+            <form action="#">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>教師真實姓名<span class="required-star">*</span></label>
+                        <input type="text" placeholder="輸入全名">
+                        <small class="explanation">※ 必填：為了確保教學評鑑與薪資系統對接正確，請填寫身分證上的姓名。</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>教師編號 (TEA ID)<span class="required-star">*</span></label>
+                        <input type="text" placeholder="例如：TEA-2024-001">
+                        <small class="explanation">※ 必填：這是該教師在全校唯一的身份代碼，用於開課權限綁定。</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>電子郵件<span class="required-star">*</span></label>
+                        <input type="email" placeholder="example@university.edu.tw">
+                        <small class="explanation">※ 必填：系統會將開課通知與學生成績更正申請寄送至此信箱。</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>所屬系所<span class="required-star">*</span></label>
+                        <select>
+                            <option>資訊管理學系</option>
+                            <option>數位內容設計系</option>
+                            <option>企業管理學系</option>
+                        </select>
+                        <small class="explanation">※ 必填：協助系統歸類教師至正確的行政單位。</small>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>初始密碼設定<span class="required-star">*</span></label>
+                        <input type="text" value="Edu#2024!Teacher" readonly style="background: #f8fafc; color: #94a3b8;">
+                        <small class="explanation">※ 系統預設：為確保安全性，首次登入後系統將強制教師修改密碼。</small>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <button type="submit" class="btn-primary">確認建立教師帳戶</button>
+                </div>
+            </form>
+        </div>
+
+        <div style="height: 50px;"></div>
+    </main>
+
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduTrack Pro | 高質感選課系統</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #2d3436;
+            --text-muted: #636e72;
+            --accent: #6c5ce7;
+            --danger: #d63031;
+            --shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background: #f0f2f5;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* 容器設計 */
+        .container {
+            width: 100%;
+            max-width: 450px;
+            background: var(--glass-bg);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .logo-area {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-area h1 {
+            font-size: 24px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        /* 表單樣式 */
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .required-star {
+            color: var(--danger);
+            margin-left: 4px;
+        }
+
+        .helper-text {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            display: block;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid #dfe6e9;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            outline: none;
+            background-color: #fff;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.1);
+        }
+
+        /* 下拉選單特別設計 */
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23636e72' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+        }
+
+        /* 按鈕設計 */
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 92, 231, 0.4);
+        }
+
+        .footer-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+
+        .footer-link a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* 修改個人資訊區塊的特殊排版 */
+        .profile-upload {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .avatar-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #eee;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #b2bec3;
+            color: #b2bec3;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="logo-area">
+            <h1>EduTrack Pro</h1>
+            <p style="color: var(--text-muted); font-size: 14px; margin-top: 5px;">選課成績管理系統</p>
+        </div>
+
+        <form onsubmit="return false;">
+            <div class="form-group">
+                <label>登入身分<span class="required-star">*</span></label>
+                <select required>
+                    <option value="" disabled selected>請選擇您的身分</option>
+                    <option value="student">學生 (Student)</option>
+                    <option value="teacher">教師 (Teacher)</option>
+                    <option value="admin">系統管理員 (Admin)</option>
+                </select>
+                <span class="helper-text">系統將根據身分提供不同的功能面板。</span>
+            </div>
+
+            <div class="profile-upload">
+                <div class="avatar-preview">
+                    <i class="fas fa-camera"></i>
+                </div>
+                <span style="font-size: 12px; color: var(--accent); cursor: pointer; font-weight: 600;">上傳個人頭像</span>
+            </div>
+
+            <div class="form-group">
+                <label>真實姓名<span class="required-star">*</span></label>
+                <input type="text" placeholder="例如：王小明" required>
+                <span class="helper-text">用於成績單與選課名單正式記錄，請填寫完整姓名。</span>
+            </div>
+
+            <div class="form-group">
+                <label>登入密碼<span class="required-star">*</span></label>
+                <input type="password" placeholder="請輸入密碼" required>
+                <span class="helper-text">安全等級：請包含英文字母與數字。</span>
+            </div>
+
+            <button type="submit" class="btn-submit">確認並進入系統</button>
+        </form>
+
+        <div class="footer-link">
+            尚未擁有帳號？ <a href="#">立即註冊</a>
+        </div>
+    </div>
+
+</body>
+</html>

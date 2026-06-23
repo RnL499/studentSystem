@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成績查詢 | 成績管理系統</title>
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --brand-dark: #1e293b;
+            --bg-main: #f8fafc;
+            --white: #ffffff;
+            --border: #e2e8f0;
+            --accent-gold: #b45309; /* 帶質感的深金色 */
+            --bg-gold: #fffbeb;
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --success: #059669;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background-color: var(--bg-main); display: flex; }
+
+        /* 側邊導覽 */
+        aside { width: var(--sidebar-width); background-color: var(--brand-dark); color: white; position: fixed; height: 100vh; }
+        .sidebar-header { padding: 30px 24px; font-size: 1.2rem; font-weight: bold; border-bottom: 1px solid #334155; }
+        nav a { display: block; padding: 14px 24px; color: #94a3b8; text-decoration: none; }
+        nav a.active { background-color: #334155; color: white; border-left: 4px solid #f59e0b; }
+
+        /* 主內容 */
+        main { margin-left: var(--sidebar-width); flex-grow: 1; padding: 40px; }
+        
+        /* 4.2.2 總平均數據卡片 */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: var(--white);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .summary-card h3 { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px; }
+        .summary-card .value { font-size: 2rem; font-weight: bold; color: var(--brand-dark); }
+        .summary-card .value.highlight { color: var(--accent-gold); }
+
+        /* 4.2.1 課程成績列表 */
+        .card { background: var(--white); border-radius: 12px; border: 1px solid var(--border); padding: 30px; }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 16px; background: #f8fafc; color: var(--text-muted); font-size: 0.85rem; border-bottom: 2px solid var(--border); }
+        td { padding: 18px 16px; border-bottom: 1px solid var(--border); font-size: 1rem; }
+
+        /* 分數顏色區分 */
+        .score { font-weight: bold; font-family: 'Consolas', monospace; font-size: 1.1rem; }
+        .score.pass { color: var(--success); }
+        .score.fail { color: #ef4444; }
+
+        /* 必填解釋區 */
+        .info-box {
+            background: #f8fafc;
+            border-left: 4px solid var(--brand-dark);
+            padding: 15px;
+            margin-top: 25px;
+            border-radius: 4px;
+        }
+        .info-box p { font-size: 0.85rem; color: var(--text-main); line-height: 1.6; }
+
+        .tag { font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; background: #f1f5f9; color: var(--text-muted); margin-left: 8px; }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div class="sidebar-header">成績管理系統</div>
+        <nav>
+            <a href="#">學生：選課管理</a>
+            <a href="#">學生：我的課表</a>
+            <a href="#" class="active">學生：成績查詢</a>
+            <a href="#">修改資訊</a>
+        </nav>
+    </aside>
+
+    <main>
+        <div class="page-header" style="margin-bottom: 30px;">
+            <h1 style="font-size: 1.5rem;">4.2 學期成績報表</h1>
+            <p style="color: var(--text-muted);">112學年度 第2學期 | 林小明</p>
+        </div>
+
+        <div class="summary-grid">
+            <div class="summary-card">
+                <h3>已修學分數</h3>
+                <div class="value">12</div>
+            </div>
+            <div class="summary-card" style="background: var(--bg-gold); border-color: #fde68a;">
+                <h3>學期總平均 (GPA)</h3>
+                <div class="value highlight">88.5</div>
+            </div>
+            <div class="summary-card">
+                <h3>全班排名</h3>
+                <div class="value">05 <span style="font-size: 1rem; color: var(--text-muted);">/ 45</span></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-header">
+                <h2 style="font-size: 1.2rem; color: var(--brand-dark);">各科成績明細</h2>
+                <button style="padding: 6px 12px; font-size: 0.8rem; border: 1px solid var(--border); background: none; border-radius: 4px; cursor: pointer;">匯出 PDF 成績單</button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>課程名稱</th>
+                        <th>授課教師</th>
+                        <th>學分</th>
+                        <th>期中成績</th>
+                        <th>期末成績</th>
+                        <th>學期成績</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>UI/UX 介面設計</strong></td>
+                        <td>王老師</td>
+                        <td>3</td>
+                        <td>85</td>
+                        <td>92</td>
+                        <td class="score pass">89</td>
+                    </tr>
+                    <tr>
+                        <td><strong>網頁設計實務</strong></td>
+                        <td>李美美</td>
+                        <td>3</td>
+                        <td>90</td>
+                        <td>88</td>
+                        <td class="score pass">89</td>
+                    </tr>
+                    <tr>
+                        <td><strong>資料庫管理系統</strong></td>
+                        <td>李主任</td>
+                        <td>3</td>
+                        <td>78</td>
+                        <td>82</td>
+                        <td class="score pass">80</td>
+                    </tr>
+                    <tr>
+                        <td><strong>人工智慧導論</strong></td>
+                        <td>張教授</td>
+                        <td>3</td>
+                        <td>95</td>
+                        <td>98</td>
+                        <td class="score pass">97</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="info-box">
+                <p><strong>※ 注意事項：</strong>學期成績是由「期中」與「期末」成績按照權比計算生成的最終結果。顯示為「--」代表授課教師尚未提交該階段分數。本頁面數據僅供參考，正式成績請以教務處核發之書面成績單為準。</p>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>
