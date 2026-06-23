@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.forms import UserCreationForm
-from .models import Profile, Teacher
+from .models import Profile, Teacher, Course
 
 from .models import Comment
 
@@ -27,6 +27,83 @@ class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = ('full_name', 'avatar')
+
+
+class CourseForm(forms.ModelForm):
+    schedule = forms.MultipleChoiceField(
+        choices=[(code, label) for _, choices in Course.SCHEDULE_CHOICES for code, label in choices],
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'schedule-grid'}),
+        required=True,
+        label='課程時間',
+    )
+
+    class Meta:
+        model = Course
+        fields = ('name', 'code', 'teacher', 'schedule', 'description')
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['code'].required = False
+        self.fields['schedule'].required = True
+        if self.instance and self.instance.pk and self.instance.schedule:
+            self.initial['schedule'] = self.instance.schedule.split(',')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        schedule = cleaned_data.get('schedule')
+        code = cleaned_data.get('code')
+
+        if not code:
+            cleaned_data['code'] = self.generate_code_from_schedule(schedule)
+
+        return cleaned_data
+
+    def clean_code(self):
+        code = self.cleaned_data.get('code')
+        if not code:
+            code = self.generate_code_from_schedule(self.cleaned_data.get('schedule'))
+        return code
+
+    def clean_schedule(self):
+        schedule = self.cleaned_data.get('schedule')
+        if isinstance(schedule, list):
+            return ','.join(schedule)
+        return schedule
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        schedule = self.cleaned_data.get('schedule')
+        if isinstance(schedule, list):
+            instance.schedule = ','.join(schedule)
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
+
+    def generate_code_from_schedule(self, schedule):
+        if not schedule:
+            base = 'CRS'
+        else:
+            if isinstance(schedule, list):
+                schedule = schedule[0]
+            if isinstance(schedule, str) and ',' in schedule:
+                schedule = schedule.split(',')[0]
+            base = ''.join([c for c in str(schedule).split()[0] if c.isalnum()]).upper()[:6] or 'CRS'
+        base = base[:6]
+        suffix = 1
+        code = f"{base}{suffix:02d}"
+        while Course.objects.filter(code=code).exists():
+            suffix += 1
+            code = f"{base}{suffix:02d}"
+        return code
+
+
+class CourseEditForm(CourseForm):
+    class Meta(CourseForm.Meta):
+        fields = ('name', 'code', 'schedule', 'description')
 
 
 class StudentRegistrationForm(UserRegistrationForm):
@@ -84,10 +161,19 @@ class CreateTeacherForm(UserCreationForm):
     """Form for admin to create a new teacher account."""
     email = forms.EmailField(required=False)
     full_name = forms.CharField(max_length=100, required=False, label='教師姓名')
+    department = forms.ChoiceField(
+        choices=[
+            ('資訊管理學系', '資訊管理學系'),
+            ('數位內容設計系', '數位內容設計系'),
+            ('企業管理學系', '企業管理學系'),
+        ],
+        required=False,
+        label='所屬系所'
+    )
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password1', 'password2')
+        fields = ('username', 'email', 'password1', 'password2', 'full_name', 'department')
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -102,6 +188,7 @@ class CreateTeacherForm(UserCreationForm):
             # Ensure 'Teacher' group exists and add the user to it
             teacher_group, _ = Group.objects.get_or_create(name='Teacher')
             user.groups.add(teacher_group)
-            # Create Teacher model instance
-            Teacher.objects.get_or_create(user=user, defaults={'department': ''})
+            # Create Teacher model instance with department if provided
+            department = self.cleaned_data.get('department', '')
+            Teacher.objects.update_or_create(user=user, defaults={'department': department})
         return user

@@ -51,8 +51,8 @@
         <td><strong>{{ course.code }}</strong></td>
         <td>{{ course.name }}</td>
         <td>
-          {% if course.teacher and course.teacher.user and course.teacher.user.profile and course.teacher.user.profile.is_teacher %}
-            {{ course.teacher.user.username }}
+          {% if course.teacher %}
+            {{ course.teacher.profile.full_name|default:course.teacher.username }}
           {% else %}
             <span class="text-muted">未分配</span>
           {% endif %}

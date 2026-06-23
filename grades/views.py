@@ -11,7 +11,7 @@ from django.db.models import Count
 
 from .models import Course, Enrollment
 from .models import Comment
-from .forms import StudentRegistrationForm, UserRegistrationForm, ProfileForm, CommentForm, CreateTeacherForm, GradeForm
+from .forms import StudentRegistrationForm, UserRegistrationForm, ProfileForm, CommentForm, CreateTeacherForm, GradeForm, CourseForm, CourseEditForm
 from django.contrib.auth.decorators import login_required, user_passes_test
 
 # Placeholder until Course model has schedule/credits/capacity fields
@@ -19,6 +19,25 @@ DEFAULT_COURSE_CAPACITY = 40
 DEFAULT_COURSE_CREDITS = 3
 DEFAULT_COURSE_SCHEDULE = '—'
 SCHEDULE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4']
+
+
+def _get_credits_for_schedule(schedule):
+    """Automatically determine credits based on schedule."""
+    if not schedule:
+        return DEFAULT_COURSE_CREDITS
+    first_period_codes = {'MON_1', 'TUE_1', 'WED_1', 'THU_1', 'FRI_1', 'MON_2', 'TUE_2', 'WED_2', 'THU_2', 'FRI_2'}
+    schedules = []
+    if isinstance(schedule, str):
+        schedules = [s.strip() for s in schedule.split(',') if s.strip()]
+    elif isinstance(schedule, (list, tuple)):
+        schedules = schedule
+
+    for sched in schedules:
+        if sched in first_period_codes:
+            return 3
+        if '08:00-10:00' in sched or '09:10-10:10' in sched:
+            return 3
+    return 2 if schedules else DEFAULT_COURSE_CREDITS
 
 
 def _user_display_name(user):
@@ -39,8 +58,8 @@ def _course_row_meta(course):
     capacity = DEFAULT_COURSE_CAPACITY
     remaining = max(0, capacity - enrolled_count)
     return {
-        'credits': DEFAULT_COURSE_CREDITS,
-        'schedule': DEFAULT_COURSE_SCHEDULE,
+        'credits': getattr(course, 'credits', DEFAULT_COURSE_CREDITS) or DEFAULT_COURSE_CREDITS,
+        'schedule': getattr(course, 'schedule', DEFAULT_COURSE_SCHEDULE) or DEFAULT_COURSE_SCHEDULE,
         'capacity': capacity,
         'enrolled_count': enrolled_count,
         'remaining': remaining,
@@ -49,12 +68,28 @@ def _course_row_meta(course):
     }
 
 
+
+def _generate_course_code(schedule):
+    if schedule:
+        base = ''.join([c for c in schedule.split()[0] if c.isalnum()]).upper()[:6]
+        if not base:
+            base = 'CRS'
+    else:
+        base = 'CRS'
+    suffix = 1
+    code = f"{base}{suffix:02d}"
+    while Course.objects.filter(code=code).exists():
+        suffix += 1
+        code = f"{base}{suffix:02d}"
+    return code
+
+
 def _post_login_url(user):
     if user.is_staff:
-        return reverse('create_teacher')
+        return reverse('admin_dashboard')
     if _is_teacher(user):
-        return reverse('teacher_courses')
-    return reverse('course_enrollment_manage')
+        return reverse('teacher_dashboard')
+    return reverse('student_dashboard')
 
 
 class RoleLoginView(auth_views.LoginView):
@@ -69,6 +104,55 @@ def index(request):
     if request.user.is_authenticated:
         return redirect(_post_login_url(request.user))
     return redirect('login')
+
+
+def admin_dashboard(request):
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return redirect('login')
+    teacher_count = User.objects.filter(profile__is_teacher=True).count()
+    student_count = User.objects.filter(is_staff=False, profile__is_teacher=False).count()
+    course_count = Course.objects.count()
+    recent_courses = Course.objects.order_by('-id')[:5]
+    return render(request, 'uiux/admin_dashboard.html', {
+        'teacher_count': teacher_count,
+        'student_count': student_count,
+        'course_count': course_count,
+        'recent_courses': recent_courses,
+        'active_nav': 'admin_dashboard',
+    })
+
+
+def teacher_dashboard(request):
+    if not _is_teacher_or_staff(request.user):
+        return redirect('login')
+    courses = Course.objects.filter(teacher=request.user).order_by('code')
+    total_students = Enrollment.objects.filter(course__teacher=request.user).count()
+    total_courses = courses.count()
+    return render(request, 'uiux/teacher_dashboard.html', {
+        'courses': courses,
+        'total_students': total_students,
+        'total_courses': total_courses,
+        'active_nav': 'dashboard',
+    })
+
+
+def student_dashboard(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    if _is_teacher(request.user) or request.user.is_staff:
+        return redirect(_post_login_url(request.user))
+
+    enrollments = Enrollment.objects.filter(student=request.user).select_related('course')
+    total_credits = sum(getattr(e.course, 'credits', DEFAULT_COURSE_CREDITS) or DEFAULT_COURSE_CREDITS for e in enrollments)
+    grades = [float(e.midterm_grade) for e in enrollments if e.midterm_grade is not None] + [float(e.final_grade) for e in enrollments if e.final_grade is not None]
+    overall_avg = round(sum(grades) / len(grades), 1) if grades else None
+    return render(request, 'uiux/student_dashboard.html', {
+        'enrollments': enrollments,
+        'total_credits': total_credits,
+        'overall_avg': overall_avg,
+        'active_nav': 'dashboard',
+        'recent_courses': Course.objects.order_by('-id')[:6],
+    })
 
 
 def main(request):
@@ -130,18 +214,55 @@ def teacher_courses(request):
     })
 
 
-@user_passes_test(_is_teacher)
+@user_passes_test(_is_teacher_or_staff)
 def teacher_course_students(request, course_id):
     """Show students for a course."""
-    course = get_object_or_404(Course, id=course_id, teacher=request.user)
-    courses = Course.objects.filter(teacher=request.user).order_by('code')
-    enrollments = Enrollment.objects.filter(course=course).select_related('student', 'student__profile')
+    course = get_object_or_404(Course, id=course_id)
+    if not (request.user.is_staff or course.teacher == request.user):
+        messages.error(request, '沒有權限檢視此課程名單')
+        return redirect('teacher_courses')
+    if request.user.is_staff:
+        courses = Course.objects.order_by('code')
+    else:
+        courses = Course.objects.filter(teacher=request.user).order_by('code')
+    approved_enrollments = Enrollment.objects.filter(course=course, approved=True).select_related('student', 'student__profile')
+    pending_enrollments = Enrollment.objects.filter(course=course, approved=False).select_related('student', 'student__profile')
     return render(request, 'uiux/teacher_student_roster.html', {
         'course': course,
         'courses': courses,
-        'enrollments': enrollments,
+        'approved_enrollments': approved_enrollments,
+        'pending_enrollments': pending_enrollments,
         'active_nav': 'roster',
     })
+
+
+@user_passes_test(_is_teacher_or_staff)
+def approve_enrollment(request, enrollment_id):
+    if request.method != 'POST':
+        return redirect('teacher_courses')
+    enrollment = get_object_or_404(Enrollment, id=enrollment_id)
+    course = enrollment.course
+    if not (request.user.is_staff or course.teacher == request.user):
+        messages.error(request, '沒有權限審核此選課申請')
+        return redirect('teacher_courses')
+    enrollment.approved = True
+    enrollment.save()
+    messages.success(request, f'{enrollment.student.username} 的選課申請已通過')
+    return redirect('teacher_course_students', course_id=course.id)
+
+
+@user_passes_test(_is_teacher_or_staff)
+def reject_enrollment(request, enrollment_id):
+    if request.method != 'POST':
+        return redirect('teacher_courses')
+    enrollment = get_object_or_404(Enrollment, id=enrollment_id)
+    course = enrollment.course
+    if not (request.user.is_staff or course.teacher == request.user):
+        messages.error(request, '沒有權限拒絕此選課申請')
+        return redirect('teacher_courses')
+    enrollment.delete()
+    messages.success(request, '選課申請已拒絕')
+    return redirect('teacher_course_students', course_id=course.id)
 
 
 @user_passes_test(_is_teacher)
@@ -211,32 +332,43 @@ def update_enrollment_grade(request, enrollment_id):
     return redirect(f'{url}?tab={tab}')
 
 
-@user_passes_test(_is_teacher)
+@user_passes_test(_is_teacher_or_staff)
 def edit_course(request, course_id):
-    course = get_object_or_404(Course, id=course_id, teacher=request.user)
+    course = get_object_or_404(Course, id=course_id)
+    if not (request.user.is_staff or course.teacher == request.user):
+        messages.error(request, '沒有權限編輯此課程')
+        return redirect('teacher_courses')
+
     if request.method == 'POST':
-        course_name = request.POST.get('course_name')
-        course_code = request.POST.get('course_code')
-        if course_name and course_code:
-            course.name = course_name
-            course.code = course_code
-            course.save()
+        form = CourseEditForm(request.POST, instance=course)
+        if form.is_valid():
+            updated_course = form.save()
+            if updated_course.schedule:
+                updated_course.credits = _get_credits_for_schedule(updated_course.schedule)
+                updated_course.save()
             messages.success(request, '課程資訊已更新')
+            if request.user.is_staff:
+                return redirect('admin_add_course')
             return redirect('teacher_courses')
-        else:
-            messages.error(request, '請填寫完整資訊')
+    else:
+        form = CourseEditForm(instance=course)
+
     return render(request, 'uiux/teacher_edit_course.html', {
         'course': course,
+        'form': form,
         'active_nav': 'create_course',
     })
 
 import csv
 from django.http import HttpResponse
 
-@user_passes_test(_is_teacher)
+@user_passes_test(_is_teacher_or_staff)
 def export_course_students(request, course_id):
-    course = get_object_or_404(Course, id=course_id, teacher=request.user)
-    enrollments = Enrollment.objects.filter(course=course).select_related('student', 'student__profile')
+    course = get_object_or_404(Course, id=course_id)
+    if not (request.user.is_staff or course.teacher == request.user):
+        messages.error(request, '沒有權限匯出此課程名單')
+        return redirect('teacher_courses')
+    enrollments = Enrollment.objects.filter(course=course, approved=True).select_related('student', 'student__profile')
     
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = f'attachment; filename="students_{course.code}.csv"'
@@ -251,10 +383,13 @@ def export_course_students(request, course_id):
     return response
 
 
-@user_passes_test(_is_teacher)
+@user_passes_test(_is_teacher_or_staff)
 def export_course_grades(request, course_id):
-    course = get_object_or_404(Course, id=course_id, teacher=request.user)
-    enrollments = Enrollment.objects.filter(course=course).select_related('student', 'student__profile')
+    course = get_object_or_404(Course, id=course_id)
+    if not (request.user.is_staff or course.teacher == request.user):
+        messages.error(request, '沒有權限匯出此課程成績')
+        return redirect('teacher_courses')
+    enrollments = Enrollment.objects.filter(course=course, approved=True).select_related('student', 'student__profile')
     
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = f'attachment; filename="grades_{course.code}.csv"'
@@ -324,37 +459,45 @@ def add_course(request):
 @user_passes_test(lambda u: u.is_authenticated and u.is_staff)
 def admin_add_course(request):
     """Admin-only: create a course and assign a Teacher."""
-    class CourseForm(forms.ModelForm):
-        class Meta:
-            model = Course
-            fields = ['name', 'code', 'teacher']
-
     if request.method == 'POST':
         form = CourseForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, '課程已由管理者建立')
-            return redirect('main')
+            course = form.save()
+            messages.success(request, f'課程 {course.code} 已由管理者建立')
+            return redirect('admin_add_course')
     else:
         form = CourseForm()
     try:
         form.fields['teacher'].queryset = User.objects.filter(profile__is_teacher=True)
     except Exception:
         pass
-    return render(request, 'uiux/admin_add_course.html', {'form': form, 'active_nav': 'add_course'})
+    courses = Course.objects.order_by('code')
+    return render(request, 'uiux/admin_add_course.html', {
+        'form': form,
+        'courses': courses,
+        'active_nav': 'add_course',
+    })
 
 
 @user_passes_test(_is_teacher)
 def create_course(request):
     """Allow a logged-in teacher to create a course assigned to themselves."""
     if request.method == 'POST':
-        course_name = request.POST.get('course_name')
-        course_code = request.POST.get('course_code')
-        Course.objects.create(name=course_name, code=course_code, teacher=request.user)
-        messages.success(request, '課程已建立')
-        return redirect('teacher_courses')
-
+        form = CourseForm(request.POST)
+        if form.is_valid():
+            course = form.save(commit=False)
+            course.teacher = request.user
+            if not course.code:
+                course.code = _generate_course_code(course.schedule)
+            if course.schedule:
+                course.credits = _get_credits_for_schedule(course.schedule)
+            course.save()
+            messages.success(request, '課程已建立')
+            return redirect('teacher_courses')
+    else:
+        form = CourseForm()
     return render(request, 'uiux/teacher_create_course.html', {
+        'form': form,
         'display_name': _user_display_name(request.user),
         'active_nav': 'create_course',
     })
@@ -560,12 +703,18 @@ def semester_average(request, semester):
     return render(request, 'semester_average.html', {'semester': semester, 'avg': avg})
 
 
-@user_passes_test(_is_teacher)
+@login_required
 def remove_course(request, course_id):
-    course = get_object_or_404(Course, id=course_id, teacher=request.user)
+    course = get_object_or_404(Course, id=course_id)
+    # Only admin may delete a course; teachers may request admin to delete
+    if not request.user.is_staff:
+        messages.error(request, '只有管理員可刪除課程，請聯絡管理員處理')
+        return redirect('teacher_courses')
     if request.method == 'POST':
         course.delete()
         messages.success(request, '課程已刪除')
+        if request.user.is_staff:
+            return redirect('admin_add_course')
         return redirect('teacher_courses')
     return render(request, 'uiux/confirm_delete_course.html', {'course': course, 'active_nav': 'create_course'})
 
@@ -604,7 +753,7 @@ def available_courses(request):
 
 @login_required
 def enroll_student_course(request, course_id):
-    """Student enrolls in a course."""
+    """Student applies to enroll in a course."""
     if request.method != 'POST':
         return redirect('course_enrollment_manage')
     course = get_object_or_404(Course, id=course_id)
@@ -612,24 +761,33 @@ def enroll_student_course(request, course_id):
     if meta['is_full']:
         messages.error(request, f'{course.code} 已額滿，無法加選')
         return redirect('course_enrollment_manage')
-    enrollment, created = Enrollment.objects.get_or_create(student=request.user, course=course)
+    enrollment, created = Enrollment.objects.get_or_create(
+        student=request.user,
+        course=course,
+        defaults={'approved': False}
+    )
     if created:
-        messages.success(request, f'已加選 {course.code}')
+        messages.success(request, f'已送出 {course.code} 選課申請，待教師/管理員審核')
     else:
-        messages.info(request, f'您已經加選 {course.code}')
+        if enrollment.approved:
+            messages.info(request, f'您已經加選 {course.code}')
+        else:
+            messages.info(request, f'{course.code} 的選課申請尚在審核中')
     return redirect('course_enrollment_manage')
 
 
 @login_required
 def course_enrollment_manage(request):
-    """Student course enrollment hub: available courses + enrolled courses."""
+    """Student course enrollment hub: available courses, pending requests, and enrolled courses."""
     if _is_teacher(request.user) or request.user.is_staff:
         return redirect(_post_login_url(request.user))
 
-    enrolled_qs = Enrollment.objects.filter(student=request.user).select_related(
+    all_enrollments = Enrollment.objects.filter(student=request.user).select_related(
         'course', 'course__teacher', 'course__teacher__profile',
     )
-    enrolled_ids = enrolled_qs.values_list('course_id', flat=True)
+    approved_enrollments = all_enrollments.filter(approved=True)
+    pending_enrollments = all_enrollments.filter(approved=False)
+    enrolled_ids = all_enrollments.values_list('course_id', flat=True)
 
     available_qs = Course.objects.exclude(id__in=enrolled_ids).select_related(
         'teacher', 'teacher__profile',
@@ -643,9 +801,18 @@ def course_enrollment_manage(request):
         )
 
     enrolled_rows = []
-    for enrollment in enrolled_qs:
+    for enrollment in approved_enrollments:
         meta = _course_row_meta(enrollment.course)
         enrolled_rows.append({
+            'enrollment': enrollment,
+            'course': enrollment.course,
+            **meta,
+        })
+
+    pending_rows = []
+    for enrollment in pending_enrollments:
+        meta = _course_row_meta(enrollment.course)
+        pending_rows.append({
             'enrollment': enrollment,
             'course': enrollment.course,
             **meta,
@@ -658,11 +825,46 @@ def course_enrollment_manage(request):
 
     return render(request, 'uiux/course_enrollment_manage.html', {
         'enrolled_rows': enrolled_rows,
+        'pending_rows': pending_rows,
         'available_rows': available_rows,
         'display_name': _user_display_name(request.user),
         'search_query': search_query,
         'active_nav': 'enrollment',
     })
+
+
+@user_passes_test(lambda u: u.is_staff)
+def create_teacher(request):
+    """Admin-only view to create a new teacher account."""
+    if request.method == 'POST':
+        form = CreateTeacherForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '教師帳號建立成功')
+            return redirect('create_teacher')
+    else:
+        form = CreateTeacherForm()
+    
+    # Get all teachers with their profiles
+    teachers = User.objects.filter(profile__is_teacher=True).select_related('profile', 'teacher_profile')
+    
+    return render(request, 'uiux/admin_create_teacher.html', {
+        'form': form,
+        'teachers': teachers,
+        'active_nav': 'create_teacher',
+    })
+
+
+@user_passes_test(lambda u: u.is_staff)
+def delete_teacher(request, user_id):
+    """Admin-only view to delete a teacher account."""
+    if request.method != 'POST':
+        return redirect('create_teacher')
+    teacher_user = get_object_or_404(User, id=user_id, profile__is_teacher=True)
+    username = teacher_user.username
+    teacher_user.delete()
+    messages.success(request, f'教師帳號 {username} 已刪除')
+    return redirect('create_teacher')
 
 
 @login_required
@@ -738,13 +940,9 @@ def delete_comment(request, comment_id):
     return redirect('course_detail', course_id=course_id)
 
 
-@login_required
+@user_passes_test(lambda u: u.is_staff)
 def create_teacher(request):
     """Admin-only view to create a new teacher account."""
-    if not request.user.is_staff:
-        messages.error(request, '只有管理員可以建立教師帳號')
-        return redirect('main')
-    
     if request.method == 'POST':
         form = CreateTeacherForm(request.POST)
         if form.is_valid():
@@ -754,7 +952,11 @@ def create_teacher(request):
     else:
         form = CreateTeacherForm()
     
+    # Get all teachers with their profiles
+    teachers = User.objects.filter(profile__is_teacher=True).select_related('profile', 'teacher_profile')
+    
     return render(request, 'uiux/admin_create_teacher.html', {
         'form': form,
+        'teachers': teachers,
         'active_nav': 'create_teacher',
     })

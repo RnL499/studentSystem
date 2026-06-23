@@ -25,7 +25,8 @@
         width: 100%; padding: 14px; border: 1.5px solid var(--border);
         border-radius: 8px; font-size: 1rem; outline: none;
     }
-    input:focus { border-color: var(--accent); }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    textarea { min-height: 120px; }
     .explanation {
         display: block; font-size: 0.85rem; color: var(--text-muted);
         margin-top: 8px; padding: 10px; background: #f1f5f9; border-radius: 6px;
@@ -34,6 +35,10 @@
         background-color: var(--accent); color: white; padding: 14px 40px;
         border: none; border-radius: 8px; font-weight: bold; cursor: pointer; float: right;
     }
+    .schedule-grid { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+    .schedule-grid li { list-style: none; border: 1px solid var(--border); border-radius: 10px; padding: 12px 10px; background: #f8fafc; }
+    .schedule-grid input { margin-right: 8px; }
+    .errorlist { color: #ef4444; margin-top: 8px; list-style: none; }
 </style>
 {% endblock %}
 
@@ -46,18 +51,134 @@
     <h2 class="section-title">新增課程詳細資訊</h2>
     <form method="post">
         {% csrf_token %}
+        {{ form.non_field_errors }}
         <div class="form-group">
             <label>課程正式名稱<span class="star">*</span></label>
-            <input type="text" name="course_name" placeholder="例如：進階網頁程式設計" required>
+            {{ form.name }}
+            {% if form.name.errors %}<ul class="errorlist">{% for e in form.name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
             <small class="explanation">※ 此名稱將顯示於學生成績單上。</small>
         </div>
         <div class="form-group">
-            <label>課程代碼<span class="star">*</span></label>
-            <input type="text" name="course_code" placeholder="例如：CS301" required>
-            <small class="explanation">※ 課程唯一識別代碼。</small>
+            <label>課程代碼</label>
+            {{ form.code }}
+            {% if form.code.errors %}<ul class="errorlist">{% for e in form.code.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            <small class="explanation">※ 未填則自動產生。</small>
+        </div>
+        <div class="form-group">
+            <label>課程時間</label>
+            <div id="schedule-picker">
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <select id="sp-day">
+                        <option value="MON">週一</option>
+                        <option value="TUE">週二</option>
+                        <option value="WED">週三</option>
+                        <option value="THU">週四</option>
+                        <option value="FRI">週五</option>
+                    </select>
+                    <select id="sp-start">
+                        <option value="1">第1節</option>
+                        <option value="2">第2節</option>
+                        <option value="3">第3節</option>
+                        <option value="4">第4節</option>
+                        <option value="5">第5節</option>
+                        <option value="6">第6節</option>
+                        <option value="7">第7節</option>
+                        <option value="8">第8節</option>
+                    </select>
+                    <select id="sp-end">
+                        <option value="1">第1節</option>
+                        <option value="2">第2節</option>
+                        <option value="3">第3節</option>
+                        <option value="4">第4節</option>
+                        <option value="5">第5節</option>
+                        <option value="6">第6節</option>
+                        <option value="7">第7節</option>
+                        <option value="8">第8節</option>
+                    </select>
+                    <button type="button" id="sp-add" style="padding:8px 12px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer;">加入</button>
+                </div>
+                <div id="sp-list" style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+            </div>
+            <div id="raw-schedule" style="display:none;">{{ form.schedule }}</div>
+            {% if form.schedule.errors %}<ul class="errorlist">{% for e in form.schedule.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            <small class="explanation">※ 系統會依時間自動決定學分數。可複選不同日的節次範圍。</small>
+        </div>
+        <div class="form-group">
+            <label>課程描述</label>
+            {{ form.description }}
+            {% if form.description.errors %}<ul class="errorlist">{% for e in form.description.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            <small class="explanation">※ 選填：讓學生更了解本門課程內容。</small>
         </div>
         <button type="submit" class="btn-submit">確認發佈開課</button>
         <div style="clear: both;"></div>
     </form>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+;(function(){
+    const dayMap = {MON:'週一', TUE:'週二', WED:'週三', THU:'週四', FRI:'週五'};
+    const addBtn = document.getElementById('sp-add');
+    const daySel = document.getElementById('sp-day');
+    const startSel = document.getElementById('sp-start');
+    const endSel = document.getElementById('sp-end');
+    const listDiv = document.getElementById('sp-list');
+    const raw = document.getElementById('raw-schedule');
+
+    function codeFor(day, idx){ return day + '_' + idx; }
+
+    function checkCodes(codes, check){
+        const inputs = raw.querySelectorAll('input[type="checkbox"][name="schedule"]');
+        codes.forEach(c=>{
+            for(const ip of inputs){ if(ip.value===c){ ip.checked = check; break; }}
+        });
+    }
+
+    function buildDisplay(){
+        // read checked codes and group by day/contiguous ranges
+        const inputs = raw.querySelectorAll('input[type="checkbox"][name="schedule"]');
+        const checked = [];
+        inputs.forEach(ip=>{ if(ip.checked) checked.push(ip.value); });
+        const byDay = {};
+        checked.forEach(v=>{ const [d,p] = v.split('_'); const n=parseInt(p,10); (byDay[d]||(byDay[d]=[])).push(n); });
+        listDiv.innerHTML = '';
+        Object.keys(byDay).forEach(d=>{
+            const arr = Array.from(new Set(byDay[d])).sort((a,b)=>a-b);
+            // merge contiguous
+            let ranges=[]; let start=null, prev=null;
+            arr.forEach(n=>{ if(start===null){ start=n; prev=n;} else if(n===prev+1){ prev=n; } else { ranges.push([start,prev]); start=n; prev=n; }});
+            if(start!==null) ranges.push([start,prev]);
+            ranges.forEach(r=>{
+                const chip = document.createElement('div');
+                chip.style.padding='6px 10px'; chip.style.border='1px solid #d1fae5'; chip.style.borderRadius='10px'; chip.style.background='#ecfdf5'; chip.style.fontSize='0.9rem';
+                const text = `${dayMap[d]} ${r[0]===r[1]?('第'+r[0]+'節'):('第'+r[0]+'~第'+r[1]+'節')}`;
+                chip.textContent = text;
+                const rm = document.createElement('button'); rm.type='button'; rm.textContent='×'; rm.style.marginLeft='8px'; rm.style.background='transparent'; rm.style.border='none'; rm.style.cursor='pointer';
+                rm.addEventListener('click', ()=>{
+                    // uncheck codes in this range and rebuild
+                    const codes = [];
+                    for(let i=r[0]; i<=r[1]; i++) codes.push(codeFor(d,i));
+                    checkCodes(codes,false);
+                    buildDisplay();
+                });
+                chip.appendChild(rm);
+                listDiv.appendChild(chip);
+            });
+        });
+    }
+
+    addBtn.addEventListener('click', ()=>{
+        const day = daySel.value; const s = parseInt(startSel.value,10); const e = parseInt(endSel.value,10);
+        if(e < s){ alert('結束節次需大於或等於開始節次'); return; }
+        const codes = [];
+        for(let i=s;i<=e;i++) codes.push(codeFor(day,i));
+        checkCodes(codes,true);
+        buildDisplay();
+    });
+
+    // init display from existing checkboxes
+    document.addEventListener('DOMContentLoaded', buildDisplay);
+    if(document.readyState!=='loading') buildDisplay();
+})();
+</script>
 {% endblock %}

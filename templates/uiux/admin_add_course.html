@@ -21,14 +21,15 @@
     .form-group { margin-bottom: 25px; }
     label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; }
     .required-star { color: #ef4444; margin-left: 3px; }
-    input, select {
+    input, select, textarea {
         width: 100%; padding: 14px; border: 1.5px solid var(--border);
         border-radius: 8px; font-size: 1rem; outline: none; background: #fcfcfc;
     }
-    input:focus, select:focus {
+    input:focus, select:focus, textarea:focus {
         border-color: var(--accent); background: #fff;
         box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
     }
+    textarea { min-height: 120px; resize: vertical; }
     .explanation {
         display: block; font-size: 0.85rem; color: var(--text-muted);
         margin-top: 8px; padding: 10px; background: #f1f5f9; border-radius: 6px;
@@ -39,18 +40,30 @@
         margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border);
         display: flex; justify-content: flex-end;
     }
+    .schedule-grid { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+    .schedule-grid li { list-style: none; border: 1px solid var(--border); border-radius: 10px; padding: 12px 10px; background: #f8fafc; }
+    .schedule-grid input { margin-right: 8px; }
     .btn-primary {
         background-color: var(--accent); color: white; padding: 14px 40px;
         border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer;
     }
     .btn-primary:hover { box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+    .course-table { width: 100%; border-collapse: collapse; margin-top: 35px; }
+    .course-table th, .course-table td { padding: 14px 12px; border: 1px solid var(--border); text-align: left; }
+    .course-table th { background: #f8fafc; color: var(--text-muted); }
+    .course-actions button { background: none; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; cursor: pointer; }
+    .course-actions button:hover { background: #f1f5f9; }
+    .btn-edit { background: #3b82f6; color: white; padding: 8px 12px; border-radius: 6px; text-decoration: none; }
+    .btn-edit:hover { background: #2563eb; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1>系統資源管理</h1>
-    <span style="color: var(--text-muted);">歡迎回來，{{ user.username }}</span>
+    <div>
+        <h1>系統資源管理</h1>
+        <p style="color: var(--text-muted);">歡迎回來，{{ user.username }}</p>
+    </div>
 </div>
 
 <div class="workspace-card">
@@ -64,20 +77,169 @@
             <small class="explanation">※ 必填：課程正式名稱。</small>
         </div>
         <div class="form-group">
-            <label>課程代碼<span class="required-star">*</span></label>
+            <label>課程代碼</label>
             {{ form.code }}
             {% if form.code.errors %}<ul class="errorlist">{% for e in form.code.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-            <small class="explanation">※ 必填：課程唯一識別代碼。</small>
+            <small class="explanation">※ 未填則自動產生。</small>
+        </div>
+        <div class="form-group">
+            <label>課程時間<span class="required-star">*</span></label>
+            <div id="schedule-picker">
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <select id="sp-day">
+                        <option value="MON">週一</option>
+                        <option value="TUE">週二</option>
+                        <option value="WED">週三</option>
+                        <option value="THU">週四</option>
+                        <option value="FRI">週五</option>
+                    </select>
+                    <select id="sp-start">
+                        <option value="1">第1節</option>
+                        <option value="2">第2節</option>
+                        <option value="3">第3節</option>
+                        <option value="4">第4節</option>
+                        <option value="5">第5節</option>
+                        <option value="6">第6節</option>
+                        <option value="7">第7節</option>
+                        <option value="8">第8節</option>
+                    </select>
+                    <select id="sp-end">
+                        <option value="1">第1節</option>
+                        <option value="2">第2節</option>
+                        <option value="3">第3節</option>
+                        <option value="4">第4節</option>
+                        <option value="5">第5節</option>
+                        <option value="6">第6節</option>
+                        <option value="7">第7節</option>
+                        <option value="8">第8節</option>
+                    </select>
+                    <button type="button" id="sp-add" style="padding:8px 12px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer;">加入</button>
+                </div>
+                <div id="sp-list" style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+            </div>
+            <div id="raw-schedule" style="display:none;">{{ form.schedule }}</div>
+            {% if form.schedule.errors %}<ul class="errorlist">{% for e in form.schedule.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            <small class="explanation">※ 必填：填寫上課時間。</small>
+        </div>
+        <div class="form-group">
+            <label>課程描述</label>
+            {{ form.description }}
+            {% if form.description.errors %}<ul class="errorlist">{% for e in form.description.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            <small class="explanation">※ 選填：讓學生更了解本門課程內容。</small>
         </div>
         <div class="form-group">
             <label>授課教師</label>
             {{ form.teacher }}
             {% if form.teacher.errors %}<ul class="errorlist">{% for e in form.teacher.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-            <small class="explanation">※ 指定此課程的負責教師。</small>
+            <small class="explanation">※ 如果未指定，課程仍可先建立。</small>
         </div>
         <div class="action-bar">
             <button type="submit" class="btn-primary">確認建立課程</button>
         </div>
     </form>
+
+    {% if courses %}
+    <div style="margin-top: 40px;">
+        <h2 class="section-title">現有課程列表</h2>
+        <table class="course-table">
+            <thead>
+                <tr>
+                    <th>課程代碼</th>
+                    <th>名稱</th>
+                    <th>時間 / 學分</th>
+                    <th>教師</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in courses %}
+                <tr>
+                    <td>{{ course.code }}</td>
+                    <td>{{ course.name }}</td>
+                    <td>{{ course.schedule_display|default:'未設定' }} / {{ course.credits }}</td>
+                    <td>
+                        {% if course.teacher %}
+                            {{ course.teacher.profile.full_name|default:course.teacher.username }}
+                        {% else %}
+                            未分配
+                        {% endif %}
+                    </td>
+                    <td class="course-actions">
+                        <a href="{% url 'edit_course' course.id %}" style="display:inline-block; margin-right:8px;" class="btn-edit">編輯</a>
+                        <form method="post" action="{% url 'remove_course' course.id %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" onclick="return confirm('確定要刪除此課程嗎？');">刪除</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+;(function(){
+    const dayMap = {MON:'週一', TUE:'週二', WED:'週三', THU:'週四', FRI:'週五'};
+    const addBtn = document.getElementById('sp-add');
+    const daySel = document.getElementById('sp-day');
+    const startSel = document.getElementById('sp-start');
+    const endSel = document.getElementById('sp-end');
+    const listDiv = document.getElementById('sp-list');
+    const raw = document.getElementById('raw-schedule');
+
+    function codeFor(day, idx){ return day + '_' + idx; }
+
+    function checkCodes(codes, check){
+        const inputs = raw.querySelectorAll('input[type="checkbox"][name="schedule"]');
+        codes.forEach(c=>{
+            for(const ip of inputs){ if(ip.value===c){ ip.checked = check; break; }}
+        });
+    }
+
+    function buildDisplay(){
+        const inputs = raw.querySelectorAll('input[type="checkbox"][name="schedule"]');
+        const checked = [];
+        inputs.forEach(ip=>{ if(ip.checked) checked.push(ip.value); });
+        const byDay = {};
+        checked.forEach(v=>{ const [d,p] = v.split('_'); const n=parseInt(p,10); (byDay[d]||(byDay[d]=[])).push(n); });
+        listDiv.innerHTML = '';
+        Object.keys(byDay).forEach(d=>{
+            const arr = Array.from(new Set(byDay[d])).sort((a,b)=>a-b);
+            let ranges=[]; let start=null, prev=null;
+            arr.forEach(n=>{ if(start===null){ start=n; prev=n;} else if(n===prev+1){ prev=n; } else { ranges.push([start,prev]); start=n; prev=n; }});
+            if(start!==null) ranges.push([start,prev]);
+            ranges.forEach(r=>{
+                const chip = document.createElement('div');
+                chip.style.padding='6px 10px'; chip.style.border='1px solid #d1fae5'; chip.style.borderRadius='10px'; chip.style.background='#ecfdf5'; chip.style.fontSize='0.9rem';
+                const text = `${dayMap[d]} ${r[0]===r[1]?('第'+r[0]+'節'):('第'+r[0]+'~第'+r[1]+'節')}`;
+                chip.textContent = text;
+                const rm = document.createElement('button'); rm.type='button'; rm.textContent='×'; rm.style.marginLeft='8px'; rm.style.background='transparent'; rm.style.border='none'; rm.style.cursor='pointer';
+                rm.addEventListener('click', ()=>{
+                    const codes = [];
+                    for(let i=r[0]; i<=r[1]; i++) codes.push(codeFor(d,i));
+                    checkCodes(codes,false);
+                    buildDisplay();
+                });
+                chip.appendChild(rm);
+                listDiv.appendChild(chip);
+            });
+        });
+    }
+
+    addBtn.addEventListener('click', ()=>{
+        const day = daySel.value; const s = parseInt(startSel.value,10); const e = parseInt(endSel.value,10);
+        if(e < s){ alert('結束節次需大於或等於開始節次'); return; }
+        const codes = [];
+        for(let i=s;i<=e;i++) codes.push(codeFor(day,i));
+        checkCodes(codes,true);
+        buildDisplay();
+    });
+
+    document.addEventListener('DOMContentLoaded', buildDisplay);
+    if(document.readyState!=='loading') buildDisplay();
+})();
+</script>
 {% endblock %}
