@@ -1,0 +1,37 @@
+{% extends 'uiux/base_teacher.html' %}
+
+{% block title %}成績總覽 | 成績管理系統{% endblock %}
+
+{% block content %}
+<div style="padding:20px;">
+  <h1>成績總覽</h1>
+  <p style="color:var(--text-muted);">匯出或瀏覽您全部課程的期中、期末與平均成績。</p>
+  <div style="margin-top:12px; margin-bottom:12px;"><a class="btn-edit" href="{% url 'export_all_grades' %}">匯出全部成績 (CSV)</a></div>
+  <table style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="background:#f8fafc;">
+        <th style="padding:8px;border:1px solid var(--border);">課程代碼</th>
+        <th style="padding:8px;border:1px solid var(--border);">課程名稱</th>
+        <th style="padding:8px;border:1px solid var(--border);">學生帳號</th>
+        <th style="padding:8px;border:1px solid var(--border);">學生姓名</th>
+        <th style="padding:8px;border:1px solid var(--border);">期中</th>
+        <th style="padding:8px;border:1px solid var(--border);">期末</th>
+        <th style="padding:8px;border:1px solid var(--border);">平均</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td style="padding:8px;border:1px solid var(--border);">{{ r.course.code }}</td>
+        <td style="padding:8px;border:1px solid var(--border);">{{ r.course.name }}</td>
+        <td style="padding:8px;border:1px solid var(--border);">{{ r.student.username }}</td>
+        <td style="padding:8px;border:1px solid var(--border);">{{ r.student.profile.full_name|default:r.student.username }}</td>
+        <td style="padding:8px;border:1px solid var(--border);">{% if r.midterm is not None %}{{ r.midterm }}{% else %}-{% endif %}</td>
+        <td style="padding:8px;border:1px solid var(--border);">{% if r.final is not None %}{{ r.final }}{% else %}-{% endif %}</td>
+        <td style="padding:8px;border:1px solid var(--border);">{% if r.avg is not None %}{{ r.avg }}{% else %}-{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

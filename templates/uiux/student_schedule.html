@@ -7,6 +7,11 @@
     .page-header { margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
     .card { background: var(--white); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border); padding: 30px; }
     .course-list { display: grid; gap: 12px; }
+    .course-grid { width: 100%; overflow:auto; }
+    .grid-header, .grid-row { display: grid; grid-template-columns: 120px repeat(5, 1fr); }
+    .grid-header .cell { padding: 10px; font-weight:600; background:#f8fafc; border:1px solid var(--border); }
+    .grid-body .grid-row .cell { min-height:64px; padding:8px; border:1px solid var(--border); }
+    .time-col { background:#fff; font-weight:600; }
     .course-item {
         display: flex; justify-content: space-between; align-items: center;
         padding: 16px 20px; border-radius: 8px; border: 1px solid var(--border);
@@ -30,23 +35,34 @@
         <h1 style="font-size: 1.5rem;">我的學期課表</h1>
         <p style="color: var(--text-muted); font-size: 0.9rem;">{{ semester_label }}</p>
     </div>
-    <button type="button" class="print-btn" onclick="window.print()">列印課表</button>
+    <a class="print-btn" href="{% url 'student_schedule_print' %}" target="_blank">列印 / 下載課表</a>
 </div>
 
 <div class="card">
     {% if schedule_rows %}
-    <div class="course-list">
-        {% for row in schedule_rows %}
-        <div class="course-item">
-            <div>
-                <span class="color-dot" style="background: {{ row.color }};"></span>
-                <strong>{{ row.course.name }}</strong>
-                <div class="course-meta">
-                    {{ row.course.code }} · {{ row.teacher_name }} · {{ row.schedule }} · {{ row.credits }} 學分
-                </div>
-            </div>
+    <div class="course-grid">
+        <div class="grid-header">
+            <div class="cell time-col"></div>
+            {% for d in days %}
+            <div class="cell">{% if d == 'MON' %}週一{% elif d == 'TUE' %}週二{% elif d == 'WED' %}週三{% elif d == 'THU' %}週四{% else %}週五{% endif %}</div>
+            {% endfor %}
         </div>
-        {% endfor %}
+        <div class="grid-body">
+            {% for row in rows %}
+            <div class="grid-row">
+                <div class="cell time-col">第{{ row.period }}節</div>
+                {% for cell in row.cells %}
+                <div class="cell">
+                    {% for course in cell %}
+                        <div style="font-weight:600;">{{ course.name }}</div>
+                        <div style="font-size:0.85rem;color:var(--text-muted);">{{ course.code }}</div>
+                        <div style="font-size:0.85rem;color:var(--text-muted);">{% if course.teacher and course.teacher.profile and course.teacher.profile.full_name %}{{ course.teacher.profile.full_name }}{% else %}{{ course.teacher.username }}{% endif %}</div>
+                    {% empty %}{% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
     </div>
     {% else %}
     <p style="text-align:center; color: var(--text-muted); padding: 32px;">尚未選修課程。<a href="{% url 'course_enrollment_manage' %}">前往選課</a></p>

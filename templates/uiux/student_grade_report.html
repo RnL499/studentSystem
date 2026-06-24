@@ -65,8 +65,8 @@
         <form method="get" id="semester-form">
             <select name="semester" onchange="document.getElementById('semester-form').submit();" style="padding: 8px 12px; border-radius: 6px; border: 1.5px solid var(--border); font-size: 0.9rem;">
                 <option value="all" {% if selected_semester == 'all' %}selected{% endif %}>歷年所有成績</option>
-                {% for sem in semesters %}
-                <option value="{{ sem }}" {% if selected_semester == sem or not selected_semester and sem == semesters.0 %}selected{% endif %}>{{ sem }}</option>
+                {% for val,label in semesters %}
+                <option value="{{ val }}" {% if selected_semester == val %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
             </select>
         </form>
@@ -109,7 +109,7 @@
         <tbody>
             {% for row in grade_rows %}
             <tr>
-                <td><strong>{{ row.course.name }}</strong><br><small style="color:var(--text-muted);">{{ row.course.code }}</small></td>
+                <td><strong>{{ row.course.name }}</strong><br><small style="color:var(--text-muted);">{{ row.course.code }} • {{ row.semester }}</small></td>
                 <td>{{ row.teacher_name }}</td>
                 <td>{{ row.credits }}</td>
                 <td>{% if row.midterm is not None %}{{ row.midterm }}{% else %}—{% endif %}</td>

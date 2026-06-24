@@ -293,6 +293,43 @@ def teacher_grade_manage(request, course_id):
 
 
 @user_passes_test(_is_teacher)
+def teacher_grade_overview(request):
+    """Show a teacher-wide overview of all grades (midterm, final, average)."""
+    courses = Course.objects.filter(teacher=request.user).order_by('code')
+    enrollments = Enrollment.objects.filter(course__in=courses).select_related('student', 'course')
+    rows = []
+    for e in enrollments:
+        mid = float(e.midterm_grade) if e.midterm_grade is not None else None
+        fin = float(e.final_grade) if e.final_grade is not None else None
+        avg = round((mid + fin) / 2, 2) if mid is not None and fin is not None else None
+        rows.append({'course': e.course, 'student': e.student, 'midterm': mid, 'final': fin, 'avg': avg})
+    return render(request, 'uiux/teacher_grade_overview.html', {
+        'rows': rows,
+        'courses': courses,
+        'active_nav': 'grades',
+    })
+
+
+@user_passes_test(_is_teacher)
+def export_all_grades(request):
+    """Export all grades for the current teacher to CSV."""
+    courses = Course.objects.filter(teacher=request.user)
+    enrollments = Enrollment.objects.filter(course__in=courses).select_related('student', 'course')
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="all_grades_{request.user.username}.csv"'
+    response.write(u'\ufeff'.encode('utf8'))
+    writer = csv.writer(response)
+    writer.writerow(['課程代碼', '課程名稱', '學生帳號', '學生姓名', '期中成績', '期末成績', '平均'])
+    for e in enrollments:
+        mid = float(e.midterm_grade) if e.midterm_grade is not None else ''
+        fin = float(e.final_grade) if e.final_grade is not None else ''
+        avg = round((mid + fin) / 2, 2) if mid != '' and fin != '' else ''
+        full_name = e.student.profile.full_name if hasattr(e.student, 'profile') else ''
+        writer.writerow([e.course.code, e.course.name, e.student.username, full_name, mid, fin, avg])
+    return response
+
+
+@user_passes_test(_is_teacher)
 def update_enrollment_grade(request, enrollment_id):
     """Handle grade updates for an enrollment (POST)."""
     if request.method != 'POST':
@@ -594,29 +631,28 @@ def student_courses(request):
         return redirect(_post_login_url(request.user))
         
     all_enrollments = Enrollment.objects.filter(student=request.user)
-    semesters = sorted(list(set(all_enrollments.exclude(semester='').values_list('semester', flat=True))), reverse=True)
-    if not semesters:
-        semesters = ['本學期']
-        
-    selected_semester = request.GET.get('semester')
-    
+    historical_semesters = sorted(list(set(all_enrollments.exclude(semester='').values_list('semester', flat=True))), reverse=True)
+
+    # Build semester options: use token 'current' for 本學期 and actual semester strings for historical
+    semesters = [('current', '本學期')]
+    for s in historical_semesters:
+        semesters.append((s, s))
+
+    selected_semester = request.GET.get('semester', 'current')
+
     enrollments = all_enrollments.select_related(
         'course', 'course__teacher', 'course__teacher__profile',
     )
-    
-    if selected_semester and selected_semester != 'all':
-        enrollments = enrollments.filter(semester=selected_semester)
-        semester_label = selected_semester
-    elif selected_semester == 'all':
+
+    if selected_semester == 'all':
         semester_label = '歷年所有成績'
+        # no filtering; show all enrollments
+    elif selected_semester == 'current':
+        semester_label = '本學期'
+        enrollments = enrollments.filter(semester='')
     else:
-        # Default
-        if semesters and semesters[0] != '本學期':
-            semester_label = semesters[0]
-            enrollments = enrollments.filter(semester=semesters[0])
-            selected_semester = semesters[0]
-        else:
-            semester_label = '本學期'
+        semester_label = selected_semester
+        enrollments = enrollments.filter(semester=selected_semester)
 
     grade_rows = []
     total_credits = 0
@@ -636,6 +672,7 @@ def student_courses(request):
             'midterm': e.midterm_grade,
             'final': e.final_grade,
             'avg': avg,
+            'semester': ('本學期' if e.semester == '' else e.semester),
         })
     overall_avg = round(sum(avg_values) / len(avg_values), 1) if avg_values else None
     
@@ -856,6 +893,34 @@ def create_teacher(request):
 
 
 @user_passes_test(lambda u: u.is_staff)
+def admin_remove_enrollment(request, enrollment_id):
+    """Admin: remove a student's enrollment from a course."""
+    if request.method != 'POST':
+        return redirect('admin_dashboard')
+    enrollment = get_object_or_404(Enrollment, id=enrollment_id)
+    student_username = enrollment.student.username
+    course_code = enrollment.course.code
+    enrollment.delete()
+    messages.success(request, f'已移除 {student_username} 在 {course_code} 的選課紀錄')
+    return redirect('admin_dashboard')
+
+
+@user_passes_test(lambda u: u.is_staff)
+def admin_delete_user(request, user_id):
+    """Admin: delete a user account (students)."""
+    if request.method != 'POST':
+        return redirect('admin_dashboard')
+    user_obj = get_object_or_404(User, id=user_id)
+    if user_obj.is_staff:
+        messages.error(request, '不可刪除管理員帳號')
+        return redirect('admin_dashboard')
+    username = user_obj.username
+    user_obj.delete()
+    messages.success(request, f'使用者 {username} 已刪除')
+    return redirect('admin_dashboard')
+
+
+@user_passes_test(lambda u: u.is_staff)
 def delete_teacher(request, user_id):
     """Admin-only view to delete a teacher account."""
     if request.method != 'POST':
@@ -875,6 +940,7 @@ def student_schedule(request):
     enrollments = Enrollment.objects.filter(student=request.user).select_related(
         'course', 'course__teacher', 'course__teacher__profile',
     )
+    # Build schedule rows and also a weekday x period grid for display
     schedule_rows = []
     for i, enrollment in enumerate(enrollments):
         meta = _course_row_meta(enrollment.course)
@@ -885,15 +951,98 @@ def student_schedule(request):
             'credits': meta['credits'],
             'color': SCHEDULE_COLORS[i % len(SCHEDULE_COLORS)],
         })
+
+    # Build grid mapping for MON..FRI and periods 1..8
+    days = ['MON', 'TUE', 'WED', 'THU', 'FRI']
+    periods = list(range(1, 9))
+    grid = {d: {p: [] for p in periods} for d in days}
+    for row in schedule_rows:
+        course = row['course']
+        for code in course.schedule_list:
+            parts = code.split('_')
+            if len(parts) == 2:
+                d, p = parts[0], parts[1]
+                try:
+                    p_int = int(p)
+                except Exception:
+                    continue
+                if d in grid and p_int in grid[d]:
+                    grid[d][p_int].append(course)
+
+    # Build rows: each row corresponds to a period and contains the list of courses per day
+    rows = []
+    for p in periods:
+        cells = [grid[d][p] for d in days]
+        rows.append({'period': p, 'cells': cells})
+
     semester_label = '本學期'
     first_enrollment = enrollments.first()
     if first_enrollment and first_enrollment.semester:
         semester_label = first_enrollment.semester
+
     return render(request, 'uiux/student_schedule.html', {
         'schedule_rows': schedule_rows,
+        'grid': grid,
+        'days': days,
+        'periods': periods,
+        'rows': rows,
         'semester_label': semester_label,
         'active_nav': 'schedule',
     })
+
+
+@login_required
+def student_schedule_print(request):
+    """Render a minimal schedule page suitable for printing/downloading."""
+    if _is_teacher(request.user) or request.user.is_staff:
+        return redirect(_post_login_url(request.user))
+    enrollments = Enrollment.objects.filter(student=request.user).select_related('course')
+    # Build grid: days MON..FRI and periods 1..8
+    days = ['MON','TUE','WED','THU','FRI']
+    periods = list(range(1,9))
+    grid = {d: {p: [] for p in periods} for d in days}
+    for enrollment in enrollments:
+        course = enrollment.course
+        for code in course.schedule_list:
+            parts = code.split('_')
+            if len(parts) == 2:
+                d, p = parts[0], parts[1]
+                try:
+                    p_int = int(p)
+                except Exception:
+                    continue
+                if d in grid and p_int in grid[d]:
+                    grid[d][p_int].append(course)
+
+    rows = []
+    for p in periods:
+        cells = [grid[d][p] for d in days]
+        rows.append({'period': p, 'cells': cells})
+
+    # Build CSV response: one row per period, columns for MON..FRI
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="schedule_{request.user.username}.csv"'
+    response.write(u'\ufeff'.encode('utf8'))
+    writer = csv.writer(response)
+    header = ['節次', '週一', '週二', '週三', '週四', '週五']
+    writer.writerow(header)
+    for row in rows:
+        csv_row = [f'第{row["period"]}節']
+        for cell in row['cells']:
+            parts = []
+            for course in cell:
+                teacher_name = ''
+                try:
+                    if course.teacher and hasattr(course.teacher, 'profile') and getattr(course.teacher.profile, 'full_name', ''):
+                        teacher_name = course.teacher.profile.full_name
+                    else:
+                        teacher_name = course.teacher.username
+                except Exception:
+                    teacher_name = getattr(course.teacher, 'username', '')
+                parts.append(f"{course.code} {course.name} ({teacher_name})")
+            csv_row.append('\n'.join(parts))
+        writer.writerow(csv_row)
+    return response
 
 
 @login_required

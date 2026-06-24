@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <title>我的課表 - 列印</title>
+  <style>
+    body{font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; padding:20px}
+    table{width:100%; border-collapse:collapse}
+    th,td{border:1px solid #ccc; padding:8px; text-align:left}
+    th{background:#f8fafc}
+    .time-col{width:80px}
+    @media print{ body { margin:0; } }
+  </style>
+</head>
+<body>
+  <h2>學生：{{ display_name }} 的課表</h2>
+  <table>
+    <thead>
+      <tr>
+        <th class="time-col">節次</th>
+        <th>週一</th>
+        <th>週二</th>
+        <th>週三</th>
+        <th>週四</th>
+        <th>週五</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td class="time-col">第{{ row.period }}節</td>
+        {% for cell in row.cells %}
+        <td>
+          {% for course in cell %}
+            <div style="font-weight:700">{{ course.code }} {{ course.name }}</div>
+          {% empty %}{% endfor %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <script>window.print();</script>
+</body>
+</html>
