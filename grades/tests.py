@@ -30,7 +30,10 @@ class FlowTests(TestCase):
     def test_register_and_profile_edit(self):
         # register a new user
         resp = self.client.post(reverse('register'), {
-            'username': 'u2', 'password1': 'strongpass123', 'password2': 'strongpass123'
+            'username': 'u2',
+            'password1': 'strongpass123',
+            'password2': 'strongpass123',
+            'full_name': 'Demo User',
         })
         self.assertEqual(resp.status_code, 302)
         user = User.objects.get(username='u2')
@@ -43,11 +46,10 @@ class FlowTests(TestCase):
         self.assertEqual(user.profile.full_name, 'New Name')
 
     def test_student_enroll_and_drop(self):
-        # login as student and enroll via enroll_student_course
+        # login as student and enroll via course_enrollment_manage page
         self.client.login(username='student1', password='pass')
         enroll_url = reverse('enroll_student_course', args=[self.course.id])
-        resp = self.client.get(enroll_url)
-        # enroll view redirects back
+        resp = self.client.post(enroll_url, {'action': 'enroll'})
         self.assertEqual(resp.status_code, 302)
         self.assertTrue(Enrollment.objects.filter(student=self.student, course=self.course).exists())
 

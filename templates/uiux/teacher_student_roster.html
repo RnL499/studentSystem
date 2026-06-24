@@ -32,6 +32,9 @@
 <div style="margin-bottom: 10px;">
     <h1 style="font-size: 1.5rem; margin-bottom: 8px;">查詢修課學生名單</h1>
 </div>
+{% if request.GET.course_created == '1' %}
+<div class="uiux-message uiux-message-success">課程已建立</div>
+{% endif %}
 
 {% if not courses %}
 <div class="card">

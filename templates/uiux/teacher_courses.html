@@ -34,7 +34,6 @@
         <div>
             <a class="btn-link btn-primary" href="{% url 'teacher_course_students' c.id %}">修課名單</a>
             <a class="btn-link btn-warning" href="{% url 'teacher_grade_manage' c.id %}">成績管理</a>
-            <a class="btn-link btn-danger" href="{% url 'remove_course' c.id %}">刪除</a>
         </div>
     </div>
     {% endfor %}

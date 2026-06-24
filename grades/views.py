@@ -114,12 +114,14 @@ def admin_dashboard(request):
     course_count = Course.objects.count()
     recent_courses = Course.objects.order_by('-id')[:5]
     system_settings = SystemSettings.get_settings()
+    pending_enrollments = Enrollment.objects.filter(approved=False).select_related('student', 'course').order_by('-requested_at')
     return render(request, 'uiux/admin_dashboard.html', {
         'teacher_count': teacher_count,
         'student_count': student_count,
         'course_count': course_count,
         'recent_courses': recent_courses,
         'system_settings': system_settings,
+        'pending_enrollments': pending_enrollments,
         'active_nav': 'admin_dashboard',
     })
 
@@ -538,7 +540,7 @@ def create_course(request):
                 course.credits = _get_credits_for_schedule(course.schedule)
             course.save()
             messages.success(request, '課程已建立')
-            return redirect('teacher_courses')
+            return redirect(reverse('teacher_courses') + '?course_created=1')
     else:
         form = CourseForm()
     return render(request, 'uiux/teacher_create_course.html', {
@@ -1054,30 +1056,11 @@ def student_schedule_print(request):
         cells = [grid[d][p] for d in days]
         rows.append({'period': p, 'cells': cells})
 
-    # Build CSV response: one row per period, columns for MON..FRI
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = f'attachment; filename="schedule_{request.user.username}.csv"'
-    response.write(u'\ufeff'.encode('utf8'))
-    writer = csv.writer(response)
-    header = ['節次', '週一', '週二', '週三', '週四', '週五']
-    writer.writerow(header)
-    for row in rows:
-        csv_row = [f'第{row["period"]}節']
-        for cell in row['cells']:
-            parts = []
-            for course in cell:
-                teacher_name = ''
-                try:
-                    if course.teacher and hasattr(course.teacher, 'profile') and getattr(course.teacher.profile, 'full_name', ''):
-                        teacher_name = course.teacher.profile.full_name
-                    else:
-                        teacher_name = course.teacher.username
-                except Exception:
-                    teacher_name = getattr(course.teacher, 'username', '')
-                parts.append(f"{course.code} {course.name} ({teacher_name})")
-            csv_row.append('\n'.join(parts))
-        writer.writerow(csv_row)
-    return response
+    display_name = _user_display_name(request.user)
+    return render(request, 'uiux/student_schedule_print.html', {
+        'rows': rows,
+        'display_name': display_name,
+    })
 
 
 @login_required

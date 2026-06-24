@@ -111,6 +111,40 @@
     </div>
 </div>
 
+{% if pending_enrollments %}
+<div class="course-list" style="margin-bottom: 30px;">
+    <h2 style="font-size:1.3rem; margin-bottom: 18px;">待移除修課紀錄</h2>
+    <p style="color: var(--text-muted); margin-bottom: 16px;">管理員可從此處移除學生的修課紀錄。</p>
+    <table>
+        <thead>
+            <tr>
+                <th>學號</th>
+                <th>學生姓名</th>
+                <th>課程</th>
+                <th>申請狀態</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for enrollment in pending_enrollments %}
+            <tr>
+                <td>{{ enrollment.student.username }}</td>
+                <td>{{ enrollment.student.profile.full_name|default:enrollment.student.username }}</td>
+                <td>{{ enrollment.course.code }} {{ enrollment.course.name }}</td>
+                <td>{% if enrollment.approved %}已確認{% else %}待審核{% endif %}</td>
+                <td>
+                    <form method="post" action="{% url 'admin_remove_enrollment' enrollment.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-outline">移除修課</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
 <div class="course-list">
     <h2 style="font-size:1.3rem; margin-bottom: 18px;">最近建立課程</h2>
     {% if recent_courses %}
