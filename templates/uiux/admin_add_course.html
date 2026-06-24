@@ -133,6 +133,18 @@
             {% if form.teacher.errors %}<ul class="errorlist">{% for e in form.teacher.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
             <small class="explanation">※ 如果未指定，課程仍可先建立。</small>
         </div>
+        <div class="form-group">
+            <label>學分數<span class="required-star">*</span></label>
+            {{ form.credits }}
+            {% if form.credits.errors %}<ul class="errorlist">{% for e in form.credits.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            <small class="explanation">※ 必填：設定課程學分數（1~10）。</small>
+        </div>
+        <div class="form-group">
+            <label>課程人數上限<span class="required-star">*</span></label>
+            {{ form.capacity }}
+            {% if form.capacity.errors %}<ul class="errorlist">{% for e in form.capacity.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            <small class="explanation">※ 必填：課程最大修課人數，預設 40 人。</small>
+        </div>
         <div class="action-bar">
             <button type="submit" class="btn-primary">確認建立課程</button>
         </div>

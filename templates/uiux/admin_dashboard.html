@@ -18,10 +18,37 @@
     .dashboard-card .count { font-size: 2.5rem; font-weight: bold; color: var(--brand-dark); }
     .course-list {
         background: var(--white); padding: 24px; border: 1px solid var(--border); border-radius: 16px;
+        margin-bottom: 30px;
     }
     .course-list table { width: 100%; border-collapse: collapse; }
     .course-list th, .course-list td { padding: 14px; border-bottom: 1px solid var(--border); text-align: left; }
     .course-list th { background: #f8fafc; color: var(--text-muted); }
+    .system-controls {
+        background: var(--white); border-radius: 16px; padding: 28px;
+        border: 1px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        margin-bottom: 30px;
+    }
+    .system-controls h2 { font-size: 1.2rem; margin-bottom: 20px; color: var(--brand-dark); display: flex; align-items: center; gap: 10px; }
+    .controls-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+    .toggle-btn {
+        display: inline-flex; align-items: center; gap: 10px; padding: 12px 20px;
+        border-radius: 10px; font-size: 0.95rem; font-weight: 600;
+        border: none; cursor: pointer; transition: all 0.2s;
+    }
+    .toggle-btn.on { background: #d1fae5; color: #065f46; }
+    .toggle-btn.on:hover { background: #a7f3d0; }
+    .toggle-btn.off { background: #fee2e2; color: #991b1b; }
+    .toggle-btn.off:hover { background: #fecaca; }
+    .backup-btn {
+        padding: 12px 20px; border-radius: 10px; background: #1e293b; color: white;
+        font-size: 0.95rem; font-weight: 600; text-decoration: none; display: inline-flex;
+        align-items: center; gap: 8px; transition: all 0.2s;
+    }
+    .backup-btn:hover { background: #334155; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .status-dot.on { background: #10b981; }
+    .status-dot.off { background: #ef4444; }
+    .section-label { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
 </style>
 {% endblock %}
 
@@ -48,6 +75,42 @@
     </div>
 </div>
 
+<div class="system-controls">
+    <h2>⚙️ 系統控制面板</h2>
+    <div class="controls-row">
+        <div>
+            <div class="section-label">選課期間</div>
+            <form method="post" action="{% url 'admin_toggle_settings' %}" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="toggle_enrollment">
+                <button type="submit" class="toggle-btn {% if system_settings.is_enrollment_open %}on{% else %}off{% endif %}">
+                    <span class="status-dot {% if system_settings.is_enrollment_open %}on{% else %}off{% endif %}"></span>
+                    {% if system_settings.is_enrollment_open %}選課開放中{% else %}選課已關閉{% endif %}
+                    &nbsp;（點擊切換）
+                </button>
+            </form>
+        </div>
+        <div>
+            <div class="section-label">退選期間</div>
+            <form method="post" action="{% url 'admin_toggle_settings' %}" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="toggle_drop">
+                <button type="submit" class="toggle-btn {% if system_settings.is_drop_open %}on{% else %}off{% endif %}">
+                    <span class="status-dot {% if system_settings.is_drop_open %}on{% else %}off{% endif %}"></span>
+                    {% if system_settings.is_drop_open %}退選開放中{% else %}退選已關閉{% endif %}
+                    &nbsp;（點擊切換）
+                </button>
+            </form>
+        </div>
+        <div>
+            <div class="section-label">資料備份</div>
+            <a href="{% url 'admin_backup_db' %}" class="backup-btn">
+                💾 下載資料庫備份
+            </a>
+        </div>
+    </div>
+</div>
+
 <div class="course-list">
     <h2 style="font-size:1.3rem; margin-bottom: 18px;">最近建立課程</h2>
     {% if recent_courses %}
@@ -58,6 +121,7 @@
                 <th>課程名稱</th>
                 <th>上課時間</th>
                 <th>學分</th>
+                <th>人數上限</th>
             </tr>
         </thead>
         <tbody>
@@ -67,6 +131,7 @@
                 <td>{{ course.name }}</td>
                 <td>{{ course.schedule_display|default:'未設定' }}</td>
                 <td>{{ course.credits }}</td>
+                <td>{{ course.capacity }}</td>
             </tr>
             {% endfor %}
         </tbody>

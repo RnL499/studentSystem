@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
-from .models import Course, Enrollment, Profile
+from .models import Course, Enrollment, Profile, Comment, SystemSettings
 
 
 class FlowTests(TestCase):
@@ -19,7 +19,13 @@ class FlowTests(TestCase):
         self.student = User.objects.create_user(username='student1', password='pass')
 
         # create a course taught by teacher (user)
-        self.course = Course.objects.create(name='Test Course', code='T100', teacher=self.teacher)
+        self.course = Course.objects.create(name='Test Course', code='T100', teacher=self.teacher, capacity=40)
+
+        # ensure enrollment is open
+        settings = SystemSettings.get_settings()
+        settings.is_enrollment_open = True
+        settings.is_drop_open = True
+        settings.save()
 
     def test_register_and_profile_edit(self):
         # register a new user
@@ -45,11 +51,11 @@ class FlowTests(TestCase):
         self.assertEqual(resp.status_code, 302)
         self.assertTrue(Enrollment.objects.filter(student=self.student, course=self.course).exists())
 
-        # drop via enroll_course POST (admin-like action) - student can also drop themselves
-        drop_resp = self.client.post(reverse('enroll_course'), {
-            'course_id': str(self.course.id), 'student_id': str(self.student.id), 'action': 'drop'
-        })
-        self.assertEqual(drop_resp.status_code, 302)
+        # drop the enrollment
+        enrollment = Enrollment.objects.get(student=self.student, course=self.course)
+        drop_url = reverse('drop_course', args=[enrollment.id])
+        resp = self.client.post(drop_url)
+        self.assertEqual(resp.status_code, 302)
         self.assertFalse(Enrollment.objects.filter(student=self.student, course=self.course).exists())
 
     def test_teacher_can_grade(self):
@@ -72,7 +78,6 @@ class FlowTests(TestCase):
         add_url = reverse('add_comment', args=[self.course.id])
         resp = self.client.post(add_url, {'content': 'Nice course'})
         self.assertEqual(resp.status_code, 302)
-        from .models import Comment
         c = Comment.objects.filter(course=self.course, user=self.student).first()
         self.assertIsNotNone(c)
         self.assertEqual(c.content, 'Nice course')
@@ -92,14 +97,10 @@ class FlowTests(TestCase):
         c.refresh_from_db()
         self.assertNotEqual(c.content, 'Malicious edit')
 
-        # teacher (staff check) cannot edit but can delete
-        # make teacher a staff user for delete privilege
+        # teacher (staff check) can delete
         self.teacher.is_staff = True
         self.teacher.save()
         delete_url = reverse('delete_comment', args=[c.id])
         resp = self.client.post(delete_url)
         self.assertEqual(resp.status_code, 302)
         self.assertFalse(Comment.objects.filter(id=c.id).exists())
-from django.test import TestCase
-
-# Create your tests here.

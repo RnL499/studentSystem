@@ -9,7 +9,7 @@ from django.contrib.auth import login
 from django.contrib.auth import views as auth_views
 from django.db.models import Count
 
-from .models import Course, Enrollment
+from .models import Course, Enrollment, SystemSettings
 from .models import Comment
 from .forms import StudentRegistrationForm, UserRegistrationForm, ProfileForm, CommentForm, CreateTeacherForm, GradeForm, CourseForm, CourseEditForm
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -55,7 +55,7 @@ def _teacher_display(user):
 
 def _course_row_meta(course):
     enrolled_count = course.enrollments.count()
-    capacity = DEFAULT_COURSE_CAPACITY
+    capacity = getattr(course, 'capacity', DEFAULT_COURSE_CAPACITY) or DEFAULT_COURSE_CAPACITY
     remaining = max(0, capacity - enrolled_count)
     return {
         'credits': getattr(course, 'credits', DEFAULT_COURSE_CREDITS) or DEFAULT_COURSE_CREDITS,
@@ -113,11 +113,13 @@ def admin_dashboard(request):
     student_count = User.objects.filter(is_staff=False, profile__is_teacher=False).count()
     course_count = Course.objects.count()
     recent_courses = Course.objects.order_by('-id')[:5]
+    system_settings = SystemSettings.get_settings()
     return render(request, 'uiux/admin_dashboard.html', {
         'teacher_count': teacher_count,
         'student_count': student_count,
         'course_count': course_count,
         'recent_courses': recent_courses,
+        'system_settings': system_settings,
         'active_nav': 'admin_dashboard',
     })
 
@@ -144,8 +146,17 @@ def student_dashboard(request):
 
     enrollments = Enrollment.objects.filter(student=request.user).select_related('course')
     total_credits = sum(getattr(e.course, 'credits', DEFAULT_COURSE_CREDITS) or DEFAULT_COURSE_CREDITS for e in enrollments)
-    grades = [float(e.midterm_grade) for e in enrollments if e.midterm_grade is not None] + [float(e.final_grade) for e in enrollments if e.final_grade is not None]
-    overall_avg = round(sum(grades) / len(grades), 1) if grades else None
+    weighted_sum = 0.0
+    graded_credits = 0
+    for e in enrollments:
+        mid = float(e.midterm_grade) if e.midterm_grade is not None else None
+        fin = float(e.final_grade) if e.final_grade is not None else None
+        if mid is not None and fin is not None:
+            avg_e = (mid + fin) / 2.0
+            credits_e = getattr(e.course, 'credits', DEFAULT_COURSE_CREDITS) or DEFAULT_COURSE_CREDITS
+            weighted_sum += avg_e * credits_e
+            graded_credits += credits_e
+    overall_avg = round(weighted_sum / graded_credits, 1) if graded_credits > 0 else None
     return render(request, 'uiux/student_dashboard.html', {
         'enrollments': enrollments,
         'total_credits': total_credits,
@@ -377,18 +388,15 @@ def edit_course(request, course_id):
         return redirect('teacher_courses')
 
     if request.method == 'POST':
-        form = CourseEditForm(request.POST, instance=course)
+        form = CourseEditForm(request.POST, instance=course, user=request.user)
         if form.is_valid():
-            updated_course = form.save()
-            if updated_course.schedule:
-                updated_course.credits = _get_credits_for_schedule(updated_course.schedule)
-                updated_course.save()
+            form.save()
             messages.success(request, '課程資訊已更新')
             if request.user.is_staff:
                 return redirect('admin_add_course')
             return redirect('teacher_courses')
     else:
-        form = CourseEditForm(instance=course)
+        form = CourseEditForm(instance=course, user=request.user)
 
     return render(request, 'uiux/teacher_edit_course.html', {
         'course': course,
@@ -578,9 +586,15 @@ def enroll_course(request):
             student = request.user
 
         if action == 'enroll':
+            if student == request.user and not SystemSettings.get_settings().is_enrollment_open:
+                messages.error(request, '目前非選課期間，無法加選課程')
+                return redirect(request.META.get('HTTP_REFERER', reverse('main')))
             Enrollment.objects.get_or_create(student=student, course=course)
             messages.success(request, f"{student.username} 已加入 {course.code}")
         else:
+            if student == request.user and not SystemSettings.get_settings().is_drop_open:
+                messages.error(request, '目前非退選期間，無法退選課程')
+                return redirect(request.META.get('HTTP_REFERER', reverse('main')))
             Enrollment.objects.filter(student=student, course=course).delete()
             messages.success(request, f"{student.username} 已從 {course.code} 退選")
 
@@ -603,8 +617,6 @@ def register(request):
 
 @login_required
 def edit_profile(request):
-    if _is_teacher(request.user) or request.user.is_staff:
-        return redirect(_post_login_url(request.user))
     profile = getattr(request.user, 'profile', None)
     if request.method == 'POST':
         form = ProfileForm(request.POST, request.FILES, instance=profile)
@@ -618,9 +630,18 @@ def edit_profile(request):
             return redirect('edit_profile')
     else:
         form = ProfileForm(instance=profile)
+
+    if request.user.is_staff:
+        base_template = 'uiux/base_admin.html'
+    elif _is_teacher(request.user):
+        base_template = 'uiux/base_teacher.html'
+    else:
+        base_template = 'uiux/base_student.html'
+
     return render(request, 'uiux/profile_edit.html', {
         'form': form,
         'active_nav': 'profile',
+        'base_template': base_template,
     })
 
 
@@ -656,14 +677,16 @@ def student_courses(request):
 
     grade_rows = []
     total_credits = 0
-    avg_values = []
+    weighted_sum = 0.0
+    graded_credits = 0
     for e in enrollments:
         meta = _course_row_meta(e.course)
         mid = float(e.midterm_grade) if e.midterm_grade is not None else None
         fin = float(e.final_grade) if e.final_grade is not None else None
         avg = (mid + fin) / 2 if mid is not None and fin is not None else None
         if avg is not None:
-            avg_values.append(avg)
+            weighted_sum += avg * meta['credits']
+            graded_credits += meta['credits']
         total_credits += meta['credits']
         grade_rows.append({
             'course': e.course,
@@ -674,7 +697,7 @@ def student_courses(request):
             'avg': avg,
             'semester': ('本學期' if e.semester == '' else e.semester),
         })
-    overall_avg = round(sum(avg_values) / len(avg_values), 1) if avg_values else None
+    overall_avg = round(weighted_sum / graded_credits, 1) if graded_credits > 0 else None
     
     return render(request, 'uiux/student_grade_report.html', {
         'grade_rows': grade_rows,
@@ -761,6 +784,9 @@ def drop_course(request, enrollment_id):
     """Drop course for the logged-in student."""
     if request.method != 'POST':
         return redirect('course_enrollment_manage')
+    if not SystemSettings.get_settings().is_drop_open:
+        messages.error(request, '目前非退選期間，無法退選課程')
+        return redirect('course_enrollment_manage')
     enrollment = get_object_or_404(Enrollment, id=enrollment_id, student=request.user)
     course = enrollment.course
     enrollment.delete()
@@ -793,16 +819,25 @@ def enroll_student_course(request, course_id):
     """Student applies to enroll in a course."""
     if request.method != 'POST':
         return redirect('course_enrollment_manage')
-    course = get_object_or_404(Course, id=course_id)
-    meta = _course_row_meta(course)
-    if meta['is_full']:
-        messages.error(request, f'{course.code} 已額滿，無法加選')
+
+    if not SystemSettings.get_settings().is_enrollment_open:
+        messages.error(request, '目前非選課期間，無法加選課程')
         return redirect('course_enrollment_manage')
-    enrollment, created = Enrollment.objects.get_or_create(
-        student=request.user,
-        course=course,
-        defaults={'approved': False}
-    )
+
+    from django.db import transaction
+    with transaction.atomic():
+        # Lock the course row to prevent concurrent race conditions
+        course = Course.objects.select_for_update().get(id=course_id)
+        meta = _course_row_meta(course)
+        if meta['is_full']:
+            messages.error(request, f'{course.code} 已額滿，無法加選')
+            return redirect('course_enrollment_manage')
+        enrollment, created = Enrollment.objects.get_or_create(
+            student=request.user,
+            course=course,
+            defaults={'approved': False}
+        )
+
     if created:
         messages.success(request, f'已送出 {course.code} 選課申請，待教師/管理員審核')
     else:
@@ -1056,7 +1091,7 @@ def add_comment(request, course_id):
             c.course = course
             c.save()
             messages.success(request, '留言已新增')
-    return redirect('course_detail', course_id=course_id)
+    return redirect('available_courses')
 
 
 @login_required
@@ -1064,14 +1099,14 @@ def edit_comment(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
     if comment.user != request.user:
         messages.error(request, '沒有權限編輯這則留言')
-        return redirect('course_detail', course_id=comment.course.id)
+        return redirect('available_courses')
 
     if request.method == 'POST':
         form = CommentForm(request.POST, instance=comment)
         if form.is_valid():
             form.save()
             messages.success(request, '留言已更新')
-            return redirect('course_detail', course_id=comment.course.id)
+            return redirect('available_courses')
     else:
         form = CommentForm(instance=comment)
     return render(request, 'comment_edit.html', {'form': form, 'comment': comment})
@@ -1082,30 +1117,101 @@ def delete_comment(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
     if comment.user != request.user and not request.user.is_staff:
         messages.error(request, '沒有權限刪除這則留言')
-        return redirect('course_detail', course_id=comment.course.id)
+        return redirect('available_courses')
     course_id = comment.course.id
     comment.delete()
     messages.success(request, '留言已刪除')
-    return redirect('course_detail', course_id=course_id)
+    return redirect('available_courses')
+
+
+import os
+from django.conf import settings
+from django.http import FileResponse, Http404
+import datetime
+
+@user_passes_test(lambda u: u.is_staff)
+def admin_backup_db(request):
+    """Admin-only: download a copy of the SQLite database file."""
+    db_path = settings.DATABASES['default']['NAME']
+    if os.path.exists(db_path):
+        now_str = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        response = FileResponse(open(db_path, 'rb'), content_type='application/x-sqlite3')
+        response['Content-Disposition'] = f'attachment; filename="db_backup_{now_str}.sqlite3"'
+        return response
+    raise Http404("資料庫檔案不存在")
 
 
 @user_passes_test(lambda u: u.is_staff)
-def create_teacher(request):
-    """Admin-only view to create a new teacher account."""
+def admin_toggle_settings(request):
+    """Admin-only: toggle system-wide enrollment/drop status."""
     if request.method == 'POST':
-        form = CreateTeacherForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, '教師帳號建立成功')
-            return redirect('create_teacher')
-    else:
-        form = CreateTeacherForm()
+        settings_obj = SystemSettings.get_settings()
+        action = request.POST.get('action')
+        if action == 'toggle_enrollment':
+            settings_obj.is_enrollment_open = not settings_obj.is_enrollment_open
+            settings_obj.save()
+            status = "開啟" if settings_obj.is_enrollment_open else "關閉"
+            messages.success(request, f"選課系統已{status}")
+        elif action == 'toggle_drop':
+            settings_obj.is_drop_open = not settings_obj.is_drop_open
+            settings_obj.save()
+            status = "開啟" if settings_obj.is_drop_open else "關閉"
+            messages.success(request, f"退選系統已{status}")
+    return redirect('admin_dashboard')
+
+
+@user_passes_test(lambda u: u.is_staff)
+@login_required
+def admin_user_manage(request):
+    """Admin-only: view and manage accounts, roles, and permissions on frontend."""
+    if not request.user.is_staff:
+        messages.error(request, '沒有管理員權限')
+        return redirect('student_dashboard')
+    users = User.objects.exclude(id=request.user.id).select_related('profile', 'teacher_profile').order_by('username')
     
-    # Get all teachers with their profiles
-    teachers = User.objects.filter(profile__is_teacher=True).select_related('profile', 'teacher_profile')
-    
-    return render(request, 'uiux/admin_create_teacher.html', {
-        'form': form,
-        'teachers': teachers,
-        'active_nav': 'create_teacher',
+    if request.method == 'POST':
+        target_user_id = request.POST.get('user_id')
+        action = request.POST.get('action')
+        target_user = get_object_or_404(User, id=target_user_id)
+        
+        if action == 'change_role':
+            new_role = request.POST.get('role')
+            profile, _ = Profile.objects.get_or_create(user=target_user)
+            from django.contrib.auth.models import Group
+            teacher_group, _ = Group.objects.get_or_create(name='Teacher')
+            
+            if new_role == 'student':
+                profile.is_teacher = False
+                profile.save()
+                target_user.is_staff = False
+                target_user.groups.remove(teacher_group)
+                target_user.save()
+                Teacher.objects.filter(user=target_user).delete()
+                messages.success(request, f"已將 {target_user.username} 的角色變更為學生")
+            elif new_role == 'teacher':
+                profile.is_teacher = True
+                profile.save()
+                target_user.is_staff = False
+                target_user.groups.add(teacher_group)
+                target_user.save()
+                Teacher.objects.get_or_create(user=target_user)
+                messages.success(request, f"已將 {target_user.username} 的角色變更為教師")
+            elif new_role == 'admin':
+                profile.is_teacher = False
+                profile.save()
+                target_user.is_staff = True
+                target_user.groups.remove(teacher_group)
+                target_user.save()
+                messages.success(request, f"已將 {target_user.username} 的角色變更為管理員")
+                
+        elif action == 'delete_user':
+            username = target_user.username
+            target_user.delete()
+            messages.success(request, f"使用者 {username} 已被刪除")
+            
+        return redirect('admin_user_manage')
+        
+    return render(request, 'uiux/admin_user_manage.html', {
+        'users': users,
+        'active_nav': 'user_manage',
     })

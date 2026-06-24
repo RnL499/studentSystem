@@ -1,0 +1,130 @@
+﻿{% extends 'uiux/base_admin.html' %}
+
+{% block title %}帳號與權限管理 | 成績管理系統{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header { margin-bottom: 30px; }
+    .page-header h1 { font-size: 1.75rem; color: var(--brand-dark); }
+    .users-card {
+        background: var(--white); border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid var(--border);
+        padding: 30px;
+    }
+    .section-title {
+        font-size: 1.25rem; margin-bottom: 25px; display: flex; align-items: center; color: var(--brand-dark);
+    }
+    .section-title::before {
+        content: ""; width: 4px; height: 20px; background: var(--accent);
+        margin-right: 12px; border-radius: 2px;
+    }
+    .users-table { width: 100%; border-collapse: collapse; }
+    .users-table th, .users-table td { padding: 14px 12px; border: 1px solid var(--border); text-align: left; }
+    .users-table th { background: #f8fafc; color: var(--text-muted); font-size: 0.9rem; font-weight: 600; }
+    .users-table tr:hover td { background: #f8fafc; }
+    .role-badge {
+        display: inline-block; padding: 4px 10px; border-radius: 20px;
+        font-size: 0.8rem; font-weight: 600;
+    }
+    .role-badge.student { background: #dbeafe; color: #1e40af; }
+    .role-badge.teacher { background: #d1fae5; color: #065f46; }
+    .role-badge.admin { background: #fef3c7; color: #92400e; }
+    .role-select {
+        padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border);
+        font-size: 0.9rem; background: #fcfcfc;
+    }
+    .btn-sm {
+        padding: 6px 14px; border-radius: 6px; font-size: 0.85rem;
+        font-weight: 600; cursor: pointer; border: none;
+    }
+    .btn-change { background: #3b82f6; color: white; }
+    .btn-change:hover { background: #2563eb; }
+    .btn-delete { background: #ef4444; color: white; }
+    .btn-delete:hover { background: #dc2626; }
+    .actions-cell { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .search-bar { display: flex; gap: 12px; margin-bottom: 20px; }
+    .search-bar input { flex: 1; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.95rem; }
+    .search-bar input:focus { outline: none; border-color: var(--accent); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>帳號與權限管理</h1>
+    <p style="color: var(--text-muted);">新增、修改或刪除系統中的所有使用者帳號與角色。</p>
+</div>
+
+<div class="users-card">
+    <h2 class="section-title">所有使用者列表</h2>
+    <div class="search-bar">
+        <input type="text" id="user-search" placeholder="搜尋帳號或姓名…" oninput="filterUsers(this.value)">
+    </div>
+    {% if users %}
+    <table class="users-table" id="users-table">
+        <thead>
+            <tr>
+                <th>帳號</th>
+                <th>姓名</th>
+                <th>Email</th>
+                <th>目前角色</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr class="user-row">
+                <td>{{ u.username }}</td>
+                <td>{{ u.profile.full_name|default:"—" }}</td>
+                <td>{{ u.email|default:"—" }}</td>
+                <td>
+                    {% if u.is_staff %}
+                        <span class="role-badge admin">管理員</span>
+                    {% elif u.profile.is_teacher %}
+                        <span class="role-badge teacher">教師</span>
+                    {% else %}
+                        <span class="role-badge student">學生</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="actions-cell">
+                        <form method="post" style="display:inline-flex; align-items:center; gap:6px;">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_id" value="{{ u.id }}">
+                            <input type="hidden" name="action" value="change_role">
+                            <select name="role" class="role-select">
+                                <option value="student" {% if not u.is_staff and not u.profile.is_teacher %}selected{% endif %}>學生</option>
+                                <option value="teacher" {% if not u.is_staff and u.profile.is_teacher %}selected{% endif %}>教師</option>
+                                <option value="admin" {% if u.is_staff %}selected{% endif %}>管理員</option>
+                            </select>
+                            <button type="submit" class="btn-sm btn-change">變更角色</button>
+                        </form>
+                        <form method="post" style="display:inline;" onsubmit="return confirm('確定要刪除此帳號嗎？此操作無法復原！');">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_id" value="{{ u.id }}">
+                            <input type="hidden" name="action" value="delete_user">
+                            <button type="submit" class="btn-sm btn-delete">刪除</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: var(--text-muted); text-align: center; padding: 30px;">目前沒有其他使用者。</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterUsers(query) {
+    const rows = document.querySelectorAll('#users-table .user-row');
+    const q = query.toLowerCase();
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

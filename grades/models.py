@@ -91,6 +91,7 @@ class Course(models.Model):
         related_name='teaching_courses',
         verbose_name="任課教師",
     )
+    capacity = models.PositiveIntegerField(default=40, verbose_name="課程人數上限")
 
     def __str__(self):
         return f"{self.code} - {self.name}"
@@ -206,3 +207,17 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
     else:
         # ensure a profile exists for existing users
         Profile.objects.get_or_create(user=instance)
+
+
+class SystemSettings(models.Model):
+    is_enrollment_open = models.BooleanField(default=True, verbose_name="開放選課")
+    is_drop_open = models.BooleanField(default=True, verbose_name="開放退選")
+
+    class Meta:
+        verbose_name = "系統設定"
+        verbose_name_plural = "系統設定"
+
+    @classmethod
+    def get_settings(cls):
+        obj, created = cls.objects.get_or_create(id=1)
+        return obj

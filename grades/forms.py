@@ -36,10 +36,12 @@ class CourseForm(forms.ModelForm):
         required=True,
         label='課程時間',
     )
+    credits = forms.IntegerField(min_value=1, max_value=10, required=True, label='學分數')
+    capacity = forms.IntegerField(min_value=1, max_value=500, required=True, label='課程人數上限')
 
     class Meta:
         model = Course
-        fields = ('name', 'code', 'teacher', 'schedule', 'description')
+        fields = ('name', 'code', 'teacher', 'credits', 'capacity', 'schedule', 'description')
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
         }
@@ -50,6 +52,8 @@ class CourseForm(forms.ModelForm):
         self.fields['schedule'].required = True
         if self.instance and self.instance.pk and self.instance.schedule:
             self.initial['schedule'] = self.instance.schedule.split(',')
+        if 'teacher' in self.fields:
+            self.fields['teacher'].queryset = User.objects.filter(profile__is_teacher=True)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -103,7 +107,14 @@ class CourseForm(forms.ModelForm):
 
 class CourseEditForm(CourseForm):
     class Meta(CourseForm.Meta):
-        fields = ('name', 'code', 'schedule', 'description')
+        fields = ('name', 'code', 'teacher', 'credits', 'capacity', 'schedule', 'description')
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if user and not user.is_staff:
+            if 'teacher' in self.fields:
+                self.fields['teacher'].disabled = True
 
 
 class StudentRegistrationForm(UserRegistrationForm):

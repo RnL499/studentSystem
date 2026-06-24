@@ -49,8 +49,10 @@
         <div class="sidebar-header">成績管理系統</div>
         <nav>
             <a href="{% url 'admin_dashboard' %}" {% if active_nav == 'admin_dashboard' %}class="active"{% endif %}>管理儀表板</a>
+            <a href="{% url 'admin_user_manage' %}" {% if active_nav == 'user_manage' %}class="active"{% endif %}>帳號與權限管理</a>
             <a href="{% url 'create_teacher' %}" {% if active_nav == 'create_teacher' %}class="active"{% endif %}>教師管理</a>
             <a href="{% url 'admin_add_course' %}" {% if active_nav == 'add_course' %}class="active"{% endif %}>課程管理</a>
+            <a href="{% url 'edit_profile' %}" {% if active_nav == 'profile' %}class="active"{% endif %}>修改個人資訊</a>
             <a href="/admin/" {% if active_nav == 'django_admin' %}class="active"{% endif %}>Django 後台</a>
         </nav>
         <div class="sidebar-footer">

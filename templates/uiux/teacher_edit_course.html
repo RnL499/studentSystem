@@ -107,6 +107,24 @@
             {% if form.description.errors %}<ul class="errorlist">{% for e in form.description.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
             <small class="explanation">※ 選填：讓學生更了解本門課程內容。</small>
         </div>
+        <div class="form-group">
+            <label>授課教師</label>
+            {{ form.teacher }}
+            {% if form.teacher.errors %}<ul class="errorlist">{% for e in form.teacher.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            <small class="explanation">※ 管理員可重新指派授課教師。</small>
+        </div>
+        <div class="form-group">
+            <label>學分數<span class="star">*</span></label>
+            {{ form.credits }}
+            {% if form.credits.errors %}<ul class="errorlist">{% for e in form.credits.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            <small class="explanation">※ 課程學分數（1~10）。</small>
+        </div>
+        <div class="form-group">
+            <label>課程人數上限<span class="star">*</span></label>
+            {{ form.capacity }}
+            {% if form.capacity.errors %}<ul class="errorlist">{% for e in form.capacity.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            <small class="explanation">※ 課程最大修課人數。</small>
+        </div>
         <button type="submit" class="btn-submit">儲存變更</button>
         <div style="clear: both;"></div>
     </form>

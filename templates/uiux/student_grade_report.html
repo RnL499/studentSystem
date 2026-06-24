@@ -52,6 +52,27 @@
         color: var(--text-main);
     }
     .empty-msg { text-align: center; color: var(--text-muted); padding: 32px; }
+    .btn-print {
+        padding: 6px 14px;
+        font-size: 0.85rem;
+        border: none;
+        background: #1e293b;
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+    .btn-print:hover { background: #334155; }
+    @media print {
+        aside, nav, .uiux-messages, .btn-outline, .btn-print, select, form,
+        .section-header a, .section-header button, .info-box { display: none !important; }
+        main { margin-left: 0 !important; padding: 0 !important; }
+        body { background: white !important; }
+        .summary-grid { grid-template-columns: repeat(3, 1fr); }
+        table { page-break-inside: avoid; }
+        .card { box-shadow: none !important; border: 1px solid #ccc !important; }
+        h1::before { content: "成績單  "; }
+    }
 </style>
 {% endblock %}
 
@@ -61,7 +82,7 @@
         <h1 style="font-size: 1.5rem;">學期成績報表</h1>
         <p style="color: var(--text-muted);">{{ semester_label }} | {{ display_name }}</p>
     </div>
-    <div>
+    <div style="display:flex;gap:10px;align-items:center;">
         <form method="get" id="semester-form">
             <select name="semester" onchange="document.getElementById('semester-form').submit();" style="padding: 8px 12px; border-radius: 6px; border: 1.5px solid var(--border); font-size: 0.9rem;">
                 <option value="all" {% if selected_semester == 'all' %}selected{% endif %}>歷年所有成績</option>
@@ -70,6 +91,7 @@
                 {% endfor %}
             </select>
         </form>
+        <button class="btn-print" onclick="window.print()">🖨 列印成績單</button>
     </div>
 </div>
 

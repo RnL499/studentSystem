@@ -55,6 +55,7 @@
             <a href="{% url 'create_course' %}" {% if active_nav == 'create_course' %}class="active"{% endif %}>教師：新增課程</a>
             <a href="{% url 'teacher_courses' %}" {% if active_nav == 'roster' %}class="active"{% endif %}>教師：修課名單</a>
             <a href="{% url 'teacher_grade_hub' %}" {% if active_nav == 'grades' %}class="active"{% endif %}>教師：成績管理</a>
+            <a href="{% url 'edit_profile' %}" {% if active_nav == 'profile' %}class="active"{% endif %}>修改個人資訊</a>
         </nav>
         <div class="sidebar-footer">
             <p style="color: #94a3b8; font-size: 0.8rem; margin-bottom: 8px;">{{ user.username }}</p>

@@ -45,4 +45,8 @@ urlpatterns = [
     path('admin/delete-teacher/<int:user_id>/', views.delete_teacher, name='delete_teacher'),
     path('admin/enrollment/<int:enrollment_id>/remove/', views.admin_remove_enrollment, name='admin_remove_enrollment'),
     path('admin/delete-user/<int:user_id>/', views.admin_delete_user, name='admin_delete_user'),
+    # new admin routes
+    path('admin/backup/', views.admin_backup_db, name='admin_backup_db'),
+    path('admin/settings/toggle/', views.admin_toggle_settings, name='admin_toggle_settings'),
+    path('admin/users/', views.admin_user_manage, name='admin_user_manage'),
 ]
